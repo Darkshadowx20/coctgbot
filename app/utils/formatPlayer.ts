@@ -1,19 +1,27 @@
 import { Player } from '../types/coc.js';
+import { InlineKeyboard } from 'grammy';
+
+/**
+ * Escape special Markdown characters
+ */
+function escapeMarkdown(text: string): string {
+  return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
+}
 
 /**
  * Format player data for display in Telegram
  */
 export function formatPlayerInfo(player: Player): string {
   const clanInfo = player.clan 
-    ? `\n🛡 Clan: ${player.clan.name} (Level ${player.clan.clanLevel})` 
+    ? `\n🛡 Clan: ${escapeMarkdown(player.clan.name)} (Level ${player.clan.clanLevel})` 
     : '\n🛡 Clan: None';
   
   const leagueInfo = player.league 
-    ? `\n🏆 League: ${player.league.name}` 
+    ? `\n🏆 League: ${escapeMarkdown(player.league.name)}` 
     : '\n🏆 League: None';
 
   return `
-*${player.name}* (${player.tag})
+*${escapeMarkdown(player.name)}* (${player.tag})
 👑 TH Level: ${player.townHallLevel}
 ⭐ Experience: Level ${player.expLevel}
 ${leagueInfo}
@@ -37,7 +45,7 @@ export function formatHeroes(player: Player): string {
 
   return player.heroes
     .filter(hero => hero.village === 'home')
-    .map(hero => `${hero.name}: Level ${hero.level}/${hero.maxLevel}`)
+    .map(hero => `${escapeMarkdown(hero.name)}: Level ${hero.level}/${hero.maxLevel}`)
     .join('\n');
 }
 
@@ -64,7 +72,52 @@ export function formatTroops(player: Player): string {
   const topTroops = homeTroops.slice(0, 10);
   
   return topTroops
-    .map(troop => `${troop.name}: Level ${troop.level}/${troop.maxLevel}`)
+    .map(troop => `${escapeMarkdown(troop.name)}: Level ${troop.level}/${troop.maxLevel}`)
+    .join('\n');
+}
+
+/**
+ * Create inline keyboard for player details
+ */
+export function createPlayerKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("Heroes", `heroes_${playerTag}`)
+    .text("Troops", `troops_${playerTag}`)
+    .row()
+    .text("Spells", `spells_${playerTag}`)
+    .text("Achievements", `achievements_${playerTag}`);
+}
+
+/**
+ * Format spells information from player data
+ */
+export function formatSpells(player: Player): string {
+  if (!player.spells || player.spells.length === 0) {
+    return 'No spells data available';
+  }
+
+  return player.spells
+    .filter(spell => spell.village === 'home')
+    .map(spell => `${escapeMarkdown(spell.name)}: Level ${spell.level}/${spell.maxLevel}`)
+    .join('\n');
+}
+
+/**
+ * Format achievements information from player data
+ */
+export function formatAchievements(player: Player): string {
+  if (!player.achievements || player.achievements.length === 0) {
+    return 'No achievements data available';
+  }
+
+  // Get top 10 achievements sorted by stars
+  const topAchievements = [...player.achievements]
+    .filter(achievement => achievement.village === 'home')
+    .sort((a, b) => b.stars - a.stars)
+    .slice(0, 10);
+  
+  return topAchievements
+    .map(achievement => `${escapeMarkdown(achievement.name)}: ⭐ ${achievement.stars} (${achievement.value}/${achievement.target})`)
     .join('\n');
 }
 
@@ -72,4 +125,7 @@ export default {
   formatPlayerInfo,
   formatHeroes,
   formatTroops,
+  formatSpells,
+  formatAchievements,
+  createPlayerKeyboard,
 }; 

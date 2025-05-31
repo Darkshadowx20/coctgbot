@@ -1,6 +1,13 @@
 import { Composer } from 'grammy';
 import { getPlayer } from '../services/cocApi.js';
-import { formatPlayerInfo, formatHeroes, formatTroops } from '../utils/formatPlayer.js';
+import { 
+  formatPlayerInfo, 
+  formatHeroes, 
+  formatTroops,
+  formatSpells,
+  formatAchievements,
+  createPlayerKeyboard
+} from '../utils/formatPlayer.js';
 
 // Create a composer to handle /player commands
 const composer = new Composer();
@@ -19,26 +26,17 @@ composer.command('player', async (ctx) => {
 
   try {
     // Show typing indicator
-    await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    if (ctx.chat) {
+      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    }
     
     // Get player data
     const player = await getPlayer(args);
     
-    // Format and send player info
+    // Format and send player info with inline keyboard
     await ctx.reply(formatPlayerInfo(player), {
       parse_mode: 'Markdown',
-    });
-    
-    // Send heroes info if available
-    if (player.heroes && player.heroes.length > 0) {
-      await ctx.reply(`*Heroes:*\n${formatHeroes(player)}`, {
-        parse_mode: 'Markdown',
-      });
-    }
-    
-    // Send top troops info
-    await ctx.reply(`*Top Troops:*\n${formatTroops(player)}`, {
-      parse_mode: 'Markdown',
+      reply_markup: createPlayerKeyboard(player.tag)
     });
     
   } catch (error) {
@@ -47,6 +45,111 @@ composer.command('player', async (ctx) => {
       `Error: ${error instanceof Error ? error.message : 'Failed to fetch player data'}\n` +
       'Make sure the player tag is correct and try again.'
     );
+  }
+});
+
+// Handle callback queries for player details
+composer.callbackQuery(/^heroes_(.+)$/, async (ctx) => {
+  try {
+    // Extract player tag from callback data
+    const playerTag = ctx.match[1];
+    
+    // Show typing indicator
+    if (ctx.chat) {
+      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    }
+    
+    // Get player data
+    const player = await getPlayer(playerTag);
+    
+    // Answer the callback query
+    await ctx.answerCallbackQuery();
+    
+    // Send heroes info
+    await ctx.reply(`*Heroes of ${player.name}:*\n\n${formatHeroes(player)}`, {
+      parse_mode: 'Markdown'
+    });
+  } catch (error) {
+    console.error('Error fetching player heroes:', error);
+    await ctx.answerCallbackQuery({ text: 'Error fetching heroes data', show_alert: true });
+  }
+});
+
+composer.callbackQuery(/^troops_(.+)$/, async (ctx) => {
+  try {
+    // Extract player tag from callback data
+    const playerTag = ctx.match[1];
+    
+    // Show typing indicator
+    if (ctx.chat) {
+      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    }
+    
+    // Get player data
+    const player = await getPlayer(playerTag);
+    
+    // Answer the callback query
+    await ctx.answerCallbackQuery();
+    
+    // Send troops info
+    await ctx.reply(`*Top Troops of ${player.name}:*\n\n${formatTroops(player)}`, {
+      parse_mode: 'Markdown'
+    });
+  } catch (error) {
+    console.error('Error fetching player troops:', error);
+    await ctx.answerCallbackQuery({ text: 'Error fetching troops data', show_alert: true });
+  }
+});
+
+composer.callbackQuery(/^spells_(.+)$/, async (ctx) => {
+  try {
+    // Extract player tag from callback data
+    const playerTag = ctx.match[1];
+    
+    // Show typing indicator
+    if (ctx.chat) {
+      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    }
+    
+    // Get player data
+    const player = await getPlayer(playerTag);
+    
+    // Answer the callback query
+    await ctx.answerCallbackQuery();
+    
+    // Send spells info
+    await ctx.reply(`*Spells of ${player.name}:*\n\n${formatSpells(player)}`, {
+      parse_mode: 'Markdown'
+    });
+  } catch (error) {
+    console.error('Error fetching player spells:', error);
+    await ctx.answerCallbackQuery({ text: 'Error fetching spells data', show_alert: true });
+  }
+});
+
+composer.callbackQuery(/^achievements_(.+)$/, async (ctx) => {
+  try {
+    // Extract player tag from callback data
+    const playerTag = ctx.match[1];
+    
+    // Show typing indicator
+    if (ctx.chat) {
+      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    }
+    
+    // Get player data
+    const player = await getPlayer(playerTag);
+    
+    // Answer the callback query
+    await ctx.answerCallbackQuery();
+    
+    // Send achievements info
+    await ctx.reply(`*Top Achievements of ${player.name}:*\n\n${formatAchievements(player)}`, {
+      parse_mode: 'Markdown'
+    });
+  } catch (error) {
+    console.error('Error fetching player achievements:', error);
+    await ctx.answerCallbackQuery({ text: 'Error fetching achievements data', show_alert: true });
   }
 });
 
