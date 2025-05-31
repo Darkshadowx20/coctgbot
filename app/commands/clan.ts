@@ -4,7 +4,8 @@ import {
   formatClanInfo, 
   formatClanMembers, 
   formatTopDonators,
-  createClanKeyboard 
+  createClanKeyboard,
+  createBackToClanKeyboard
 } from '../utils/formatClan.js';
 
 // Create a composer to handle /clan commands
@@ -46,6 +47,34 @@ composer.command('clan', async (ctx) => {
   }
 });
 
+// Handle back button to clan info
+composer.callbackQuery(/^back_to_clan_(.+)$/, async (ctx) => {
+  try {
+    // Extract clan tag from callback data
+    const clanTag = ctx.match[1];
+    
+    // Show typing indicator
+    if (ctx.chat) {
+      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    }
+    
+    // Get clan data
+    const clan = await getClan(clanTag);
+    
+    // Answer the callback query
+    await ctx.answerCallbackQuery({ text: "Returning to clan info" });
+    
+    // Send clan info
+    await ctx.editMessageText(formatClanInfo(clan), {
+      parse_mode: 'Markdown',
+      reply_markup: createClanKeyboard(clan.tag)
+    });
+  } catch (error) {
+    console.error('Error returning to clan info:', error);
+    await ctx.answerCallbackQuery({ text: 'Error returning to clan info', show_alert: true });
+  }
+});
+
 // Handle callback queries for clan details
 composer.callbackQuery(/^members_(.+)$/, async (ctx) => {
   try {
@@ -63,9 +92,10 @@ composer.callbackQuery(/^members_(.+)$/, async (ctx) => {
     // Answer the callback query
     await ctx.answerCallbackQuery();
     
-    // Send members info
+    // Send members info with back button
     await ctx.reply(formatClanMembers(clan), {
-      parse_mode: 'Markdown'
+      parse_mode: 'Markdown',
+      reply_markup: createBackToClanKeyboard(clan.tag)
     });
   } catch (error) {
     console.error('Error fetching clan members:', error);
@@ -89,9 +119,10 @@ composer.callbackQuery(/^donators_(.+)$/, async (ctx) => {
     // Answer the callback query
     await ctx.answerCallbackQuery();
     
-    // Send top donators info
+    // Send top donators info with back button
     await ctx.reply(formatTopDonators(clan), {
-      parse_mode: 'Markdown'
+      parse_mode: 'Markdown',
+      reply_markup: createBackToClanKeyboard(clan.tag)
     });
   } catch (error) {
     console.error('Error fetching clan donators:', error);
@@ -109,7 +140,8 @@ composer.callbackQuery(/^warlog_(.+)$/, async (ctx) => {
     
     // War log feature - placeholder for future implementation
     await ctx.reply("War log feature will be available in a future update.", {
-      parse_mode: 'Markdown'
+      parse_mode: 'Markdown',
+      reply_markup: createBackToClanKeyboard(clanTag)
     });
   } catch (error) {
     console.error('Error with war log:', error);
@@ -127,7 +159,8 @@ composer.callbackQuery(/^currentwar_(.+)$/, async (ctx) => {
     
     // Current war feature - placeholder for future implementation
     await ctx.reply("Current war feature will be available in a future update.", {
-      parse_mode: 'Markdown'
+      parse_mode: 'Markdown',
+      reply_markup: createBackToClanKeyboard(clanTag)
     });
   } catch (error) {
     console.error('Error with current war:', error);

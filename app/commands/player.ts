@@ -6,7 +6,8 @@ import {
   formatTroops,
   formatSpells,
   formatAchievements,
-  createPlayerKeyboard
+  createPlayerKeyboard,
+  createBackToPlayerKeyboard
 } from '../utils/formatPlayer.js';
 
 // Create a composer to handle /player commands
@@ -48,6 +49,34 @@ composer.command('player', async (ctx) => {
   }
 });
 
+// Handle back button to player info
+composer.callbackQuery(/^back_to_player_(.+)$/, async (ctx) => {
+  try {
+    // Extract player tag from callback data
+    const playerTag = ctx.match[1];
+    
+    // Show typing indicator
+    if (ctx.chat) {
+      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    }
+    
+    // Get player data
+    const player = await getPlayer(playerTag);
+    
+    // Answer the callback query
+    await ctx.answerCallbackQuery({ text: "Returning to player info" });
+    
+    // Send player info
+    await ctx.editMessageText(formatPlayerInfo(player), {
+      parse_mode: 'Markdown',
+      reply_markup: createPlayerKeyboard(player.tag)
+    });
+  } catch (error) {
+    console.error('Error returning to player info:', error);
+    await ctx.answerCallbackQuery({ text: 'Error returning to player info', show_alert: true });
+  }
+});
+
 // Handle callback queries for player details
 composer.callbackQuery(/^heroes_(.+)$/, async (ctx) => {
   try {
@@ -65,9 +94,10 @@ composer.callbackQuery(/^heroes_(.+)$/, async (ctx) => {
     // Answer the callback query
     await ctx.answerCallbackQuery();
     
-    // Send heroes info
-    await ctx.reply(`*Heroes of ${player.name}:*\n\n${formatHeroes(player)}`, {
-      parse_mode: 'Markdown'
+    // Send heroes info with back button
+    await ctx.reply(`*Heroes of ${escapeMarkdown(player.name)}:*\n\n${formatHeroes(player)}`, {
+      parse_mode: 'Markdown',
+      reply_markup: createBackToPlayerKeyboard(player.tag)
     });
   } catch (error) {
     console.error('Error fetching player heroes:', error);
@@ -91,9 +121,10 @@ composer.callbackQuery(/^troops_(.+)$/, async (ctx) => {
     // Answer the callback query
     await ctx.answerCallbackQuery();
     
-    // Send troops info
-    await ctx.reply(`*Top Troops of ${player.name}:*\n\n${formatTroops(player)}`, {
-      parse_mode: 'Markdown'
+    // Send troops info with back button
+    await ctx.reply(`*Top Troops of ${escapeMarkdown(player.name)}:*\n\n${formatTroops(player)}`, {
+      parse_mode: 'Markdown',
+      reply_markup: createBackToPlayerKeyboard(player.tag)
     });
   } catch (error) {
     console.error('Error fetching player troops:', error);
@@ -117,9 +148,10 @@ composer.callbackQuery(/^spells_(.+)$/, async (ctx) => {
     // Answer the callback query
     await ctx.answerCallbackQuery();
     
-    // Send spells info
-    await ctx.reply(`*Spells of ${player.name}:*\n\n${formatSpells(player)}`, {
-      parse_mode: 'Markdown'
+    // Send spells info with back button
+    await ctx.reply(`*Spells of ${escapeMarkdown(player.name)}:*\n\n${formatSpells(player)}`, {
+      parse_mode: 'Markdown',
+      reply_markup: createBackToPlayerKeyboard(player.tag)
     });
   } catch (error) {
     console.error('Error fetching player spells:', error);
@@ -143,14 +175,20 @@ composer.callbackQuery(/^achievements_(.+)$/, async (ctx) => {
     // Answer the callback query
     await ctx.answerCallbackQuery();
     
-    // Send achievements info
-    await ctx.reply(`*Top Achievements of ${player.name}:*\n\n${formatAchievements(player)}`, {
-      parse_mode: 'Markdown'
+    // Send achievements info with back button
+    await ctx.reply(`*Top Achievements of ${escapeMarkdown(player.name)}:*\n\n${formatAchievements(player)}`, {
+      parse_mode: 'Markdown',
+      reply_markup: createBackToPlayerKeyboard(player.tag)
     });
   } catch (error) {
     console.error('Error fetching player achievements:', error);
     await ctx.answerCallbackQuery({ text: 'Error fetching achievements data', show_alert: true });
   }
 });
+
+// Helper function to escape markdown
+function escapeMarkdown(text: string): string {
+  return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
+}
 
 export default composer; 

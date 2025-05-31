@@ -75,6 +75,14 @@ export function createClanKeyboard(clanTag: string): InlineKeyboard {
 }
 
 /**
+ * Create a back button for details views
+ */
+export function createBackToClanKeyboard(clanTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("« Back to Clan Info", `back_to_clan_${clanTag}`);
+}
+
+/**
  * Format top donators from clan
  */
 export function formatTopDonators(clan: Clan): string {
@@ -104,4 +112,5 @@ export default {
   formatClanMembers,
   formatTopDonators,
   createClanKeyboard,
+  createBackToClanKeyboard,
 }; 

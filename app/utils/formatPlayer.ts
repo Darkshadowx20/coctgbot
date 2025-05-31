@@ -89,6 +89,14 @@ export function createPlayerKeyboard(playerTag: string): InlineKeyboard {
 }
 
 /**
+ * Create a back button for details views
+ */
+export function createBackToPlayerKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("« Back to Player Info", `back_to_player_${playerTag}`);
+}
+
+/**
  * Format spells information from player data
  */
 export function formatSpells(player: Player): string {
@@ -128,4 +136,5 @@ export default {
   formatSpells,
   formatAchievements,
   createPlayerKeyboard,
+  createBackToPlayerKeyboard,
 }; 
