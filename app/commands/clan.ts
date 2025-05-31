@@ -1,170 +1,397 @@
 import { Composer } from 'grammy';
-import { getClan } from '../services/cocApi.js';
-import { 
-  formatClanInfo, 
-  formatClanMembers, 
-  formatTopDonators,
-  createClanKeyboard,
-  createBackToClanKeyboard
-} from '../utils/formatClan.js';
+import { MyContext } from '../types/bot.js';
+import cocApi from '../services/cocApi.js';
+import clanUtils from '../utils/formatClan.js';
+import { handleApiError } from '../utils/errors.js';
 
-// Create a composer to handle /clan commands
-const composer = new Composer();
+const composer = new Composer<MyContext>();
 
-// Handler for /clan command
+/**
+ * Command to get clan information
+ * Usage: /clan <clan_tag>
+ */
 composer.command('clan', async (ctx) => {
-  const args = ctx.match.trim();
+  const args = ctx.message?.text?.split(' ').slice(1);
   
-  if (!args) {
-    return ctx.reply(
-      'Please provide a clan tag.\n' +
-      'Usage: /clan <tag>\n' +
-      'Example: /clan #ABC123'
-    );
+  if (!args || args.length === 0 || !args[0]) {
+    return ctx.reply('Usage: /clan <clan_tag>\nExample: /clan #2PGGJ20V');
+  }
+  
+  let clanTag = args[0];
+  
+  // Add # if missing
+  if (!clanTag.startsWith('#')) {
+    clanTag = '#' + clanTag;
   }
 
   try {
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
-    }
+    const clan = await cocApi.getClan(clanTag);
     
-    // Get clan data
-    const clan = await getClan(args);
-    
-    // Format and send clan info with inline keyboard
-    await ctx.reply(formatClanInfo(clan), {
-      parse_mode: 'Markdown',
-      reply_markup: createClanKeyboard(clan.tag)
+    await ctx.reply(clanUtils.formatClanInfo(clan), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: clanUtils.createClanKeyboard(clanTag)
     });
-    
   } catch (error) {
-    console.error('Error fetching clan:', error);
-    await ctx.reply(
-      `Error: ${error instanceof Error ? error.message : 'Failed to fetch clan data'}\n` +
-      'Make sure the clan tag is correct and try again.'
-    );
+    await handleApiError(ctx, error, 'clan');
   }
 });
 
-// Handle back button to clan info
-composer.callbackQuery(/^back_to_clan_(.+)$/, async (ctx) => {
+/**
+ * Command to search for clans
+ * Usage: /clansearch <name> [min_members] [max_members] [min_level]
+ */
+composer.command('clansearch', async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  
+  if (!args || args.length === 0 || !args[0]) {
+    return ctx.reply('Usage: /clansearch <name> [min_members] [max_members] [min_level]\nExample: /clansearch Clash 20 50 10');
+  }
+  
+  const name = args[0];
+  const minMembers = args.length > 1 ? parseInt(args[1]) : undefined;
+  const maxMembers = args.length > 2 ? parseInt(args[2]) : undefined;
+  const minClanLevel = args.length > 3 ? parseInt(args[3]) : undefined;
+  
   try {
-    // Extract clan tag from callback data
-    const clanTag = ctx.match[1];
+    const searchResults = await cocApi.searchClans({
+      name,
+      minMembers,
+      maxMembers,
+      minClanLevel,
+      limit: 10
+    });
     
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
-    }
-    
-    // Get clan data
-    const clan = await getClan(clanTag);
-    
-    // Answer the callback query
-    await ctx.answerCallbackQuery({ text: "Returning to clan info" });
-    
-    // Send clan info
-    await ctx.editMessageText(formatClanInfo(clan), {
-      parse_mode: 'Markdown',
-      reply_markup: createClanKeyboard(clan.tag)
+    await ctx.reply(clanUtils.formatClanSearchResults(searchResults), {
+      parse_mode: 'MarkdownV2'
     });
   } catch (error) {
-    console.error('Error returning to clan info:', error);
-    await ctx.answerCallbackQuery({ text: 'Error returning to clan info', show_alert: true });
+    await handleApiError(ctx, error, 'clan search');
   }
 });
 
-// Handle callback queries for clan details
-composer.callbackQuery(/^members_(.+)$/, async (ctx) => {
+/**
+ * Command to get clan members
+ * Usage: /clanmembers <clan_tag>
+ */
+composer.command(['clanmembers', 'members'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  
+  if (!args || args.length === 0 || !args[0]) {
+    return ctx.reply('Usage: /clanmembers <clan_tag>\nExample: /clanmembers #2PGGJ20V');
+  }
+  
+  let clanTag = args[0];
+  
+  // Add # if missing
+  if (!clanTag.startsWith('#')) {
+    clanTag = '#' + clanTag;
+  }
+  
   try {
-    // Extract clan tag from callback data
-    const clanTag = ctx.match[1];
+    const members = await cocApi.getClanMembers(clanTag);
     
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    await ctx.reply(clanUtils.formatClanMembers(members), {
+      parse_mode: 'MarkdownV2'
+    });
+  } catch (error) {
+    await handleApiError(ctx, error, 'clan members');
+  }
+});
+
+/**
+ * Command to get clan war log
+ * Usage: /clanwarlog <clan_tag>
+ */
+composer.command(['clanwarlog', 'warlog'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  
+  if (!args || args.length === 0 || !args[0]) {
+    return ctx.reply('Usage: /clanwarlog <clan_tag>\nExample: /clanwarlog #2PGGJ20V');
+  }
+  
+  let clanTag = args[0];
+    
+  // Add # if missing
+  if (!clanTag.startsWith('#')) {
+    clanTag = '#' + clanTag;
+  }
+  
+  try {
+    const warLog = await cocApi.getClanWarLog(clanTag);
+    
+    await ctx.reply(clanUtils.formatClanWarLog(warLog, clanTag), {
+      parse_mode: 'MarkdownV2'
+    });
+  } catch (error) {
+    await handleApiError(ctx, error, 'clan war log');
+  }
+});
+
+/**
+ * Command to get current clan war
+ * Usage: /currentwar <clan_tag>
+ */
+composer.command(['currentwar', 'war'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  
+  if (!args || args.length === 0 || !args[0]) {
+    return ctx.reply('Usage: /currentwar <clan_tag>\nExample: /currentwar #2PGGJ20V');
     }
     
-    // Get clan data
-    const clan = await getClan(clanTag);
+  let clanTag = args[0];
     
-    // Answer the callback query
+  // Add # if missing
+  if (!clanTag.startsWith('#')) {
+    clanTag = '#' + clanTag;
+  }
+  
+  try {
+    const currentWar = await cocApi.getCurrentWar(clanTag);
+    
+    await ctx.reply(clanUtils.formatCurrentWar(currentWar), {
+      parse_mode: 'MarkdownV2'
+    });
+  } catch (error) {
+    await handleApiError(ctx, error, 'current war');
+  }
+});
+
+/**
+ * Command to get clan capital raid seasons
+ * Usage: /capitalraids <clan_tag>
+ */
+composer.command(['capitalraids', 'raids'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  
+  if (!args || args.length === 0 || !args[0]) {
+    return ctx.reply('Usage: /capitalraids <clan_tag>\nExample: /capitalraids #2PGGJ20V');
+  }
+  
+  let clanTag = args[0];
+  
+  // Add # if missing
+  if (!clanTag.startsWith('#')) {
+    clanTag = '#' + clanTag;
+  }
+  
+  try {
+    const raidSeasons = await cocApi.getClanCapitalRaidSeasons(clanTag);
+    
+    if (raidSeasons.items && raidSeasons.items.length > 0) {
+      const latestSeason = raidSeasons.items[0];
+      await ctx.reply(clanUtils.formatCapitalRaidSeason(latestSeason, clanTag), {
+        parse_mode: 'MarkdownV2'
+      });
+    } else {
+      await ctx.reply('No raid seasons found for this clan');
+    }
+  } catch (error) {
+    await handleApiError(ctx, error, 'capital raid seasons');
+  }
+});
+
+/**
+ * Command to get clan war league group
+ * Usage: /clanwarleague <clan_tag>
+ */
+composer.command(['clanwarleague', 'cwl'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  
+  if (!args || args.length === 0 || !args[0]) {
+    return ctx.reply('Usage: /clanwarleague <clan_tag>\nExample: /clanwarleague #2PGGJ20V');
+  }
+  
+  let clanTag = args[0];
+    
+  // Add # if missing
+  if (!clanTag.startsWith('#')) {
+    clanTag = '#' + clanTag;
+  }
+  
+  try {
+    const cwlGroup = await cocApi.getCurrentWarLeagueGroup(clanTag);
+    
+    await ctx.reply(clanUtils.formatClanWarLeagueGroup(cwlGroup), {
+      parse_mode: 'MarkdownV2'
+    });
+  } catch (error) {
+    await handleApiError(ctx, error, 'clan war league group');
+    }
+});
+
+/**
+ * Command to get top clans
+ * Usage: /topclans [country_code]
+ */
+composer.command(['topclans'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  let locationId = 0; // Global by default
+  
+  if (args && args.length > 0 && args[0]) {
+    // Try to get location by country code
+    try {
+      const locations = await cocApi.getLocations();
+      const location = locations.items.find((loc: any) => 
+        loc.countryCode && loc.countryCode.toLowerCase() === args[0].toLowerCase()
+      );
+      
+      if (location) {
+        locationId = location.id;
+      } else {
+        return ctx.reply(`Could not find location with country code: ${args[0]}\nUsing global rankings instead.`);
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      // Continue with global rankings
+    }
+  }
+  
+  try {
+    const rankings = await cocApi.getClanRankings(locationId);
+    
+    await ctx.reply(clanUtils.formatClanRankings(rankings), {
+      parse_mode: 'MarkdownV2'
+    });
+  } catch (error) {
+    await handleApiError(ctx, error, 'clan rankings');
+  }
+});
+
+/**
+ * Command to get top builder base clans
+ * Usage: /topbuilderclans [country_code]
+ */
+composer.command(['topbuilderclans', 'topbbclans'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  let locationId = 0; // Global by default
+  
+  if (args && args.length > 0 && args[0]) {
+    // Try to get location by country code
+    try {
+      const locations = await cocApi.getLocations();
+      const location = locations.items.find((loc: any) => 
+        loc.countryCode && loc.countryCode.toLowerCase() === args[0].toLowerCase()
+      );
+      
+      if (location) {
+        locationId = location.id;
+      } else {
+        return ctx.reply(`Could not find location with country code: ${args[0]}\nUsing global rankings instead.`);
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      // Continue with global rankings
+    }
+  }
+  
+  try {
+    const rankings = await cocApi.getClanVersusRankings(locationId);
+    
+    await ctx.reply(clanUtils.formatClanVersusRankings(rankings), {
+      parse_mode: 'MarkdownV2'
+    });
+  } catch (error) {
+    await handleApiError(ctx, error, 'builder base clan rankings');
+    }
+});
+
+/**
+ * Callback queries for clan details
+ */
+composer.callbackQuery(/^clan_members_(.+)$/, async (ctx) => {
+  const clanTag = ctx.match[1];
+  
+  try {
+    const members = await cocApi.getClanMembers(clanTag);
+    
+    await ctx.editMessageText(clanUtils.formatClanMembers(members), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+    });
+    
     await ctx.answerCallbackQuery();
-    
-    // Send members info with back button
-    await ctx.reply(formatClanMembers(clan), {
-      parse_mode: 'Markdown',
-      reply_markup: createBackToClanKeyboard(clan.tag)
-    });
   } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching clan members');
     console.error('Error fetching clan members:', error);
-    await ctx.answerCallbackQuery({ text: 'Error fetching members data', show_alert: true });
   }
 });
 
-composer.callbackQuery(/^donators_(.+)$/, async (ctx) => {
+composer.callbackQuery(/^clan_warlog_(.+)$/, async (ctx) => {
+  const clanTag = ctx.match[1];
+  
   try {
-    // Extract clan tag from callback data
-    const clanTag = ctx.match[1];
+    const warLog = await cocApi.getClanWarLog(clanTag);
     
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    await ctx.editMessageText(clanUtils.formatClanWarLog(warLog, clanTag), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+    });
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching war log');
+    console.error('Error fetching war log:', error);
+  }
+});
+
+composer.callbackQuery(/^clan_currentwar_(.+)$/, async (ctx) => {
+  const clanTag = ctx.match[1];
+  
+  try {
+    const currentWar = await cocApi.getCurrentWar(clanTag);
+    
+    await ctx.editMessageText(clanUtils.formatCurrentWar(currentWar), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+    });
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching current war');
+    console.error('Error fetching current war:', error);
+  }
+});
+
+composer.callbackQuery(/^clan_capital_(.+)$/, async (ctx) => {
+  const clanTag = ctx.match[1];
+  
+  try {
+    const raidSeasons = await cocApi.getClanCapitalRaidSeasons(clanTag);
+    
+    if (raidSeasons.items && raidSeasons.items.length > 0) {
+      const latestSeason = raidSeasons.items[0];
+      await ctx.editMessageText(clanUtils.formatCapitalRaidSeason(latestSeason, clanTag), {
+        parse_mode: 'MarkdownV2',
+        reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+      });
+    } else {
+      await ctx.editMessageText('No raid seasons found for this clan', {
+        reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+      });
     }
     
-    // Get clan data
-    const clan = await getClan(clanTag);
-    
-    // Answer the callback query
     await ctx.answerCallbackQuery();
-    
-    // Send top donators info with back button
-    await ctx.reply(formatTopDonators(clan), {
-      parse_mode: 'Markdown',
-      reply_markup: createBackToClanKeyboard(clan.tag)
-    });
   } catch (error) {
-    console.error('Error fetching clan donators:', error);
-    await ctx.answerCallbackQuery({ text: 'Error fetching donators data', show_alert: true });
+    await ctx.answerCallbackQuery('Error fetching capital raid seasons');
+    console.error('Error fetching capital raid seasons:', error);
   }
 });
 
-composer.callbackQuery(/^warlog_(.+)$/, async (ctx) => {
+composer.callbackQuery(/^back_to_clan_(.+)$/, async (ctx) => {
+  const clanTag = ctx.match[1];
+  
   try {
-    // Extract clan tag from callback data
-    const clanTag = ctx.match[1];
+    const clan = await cocApi.getClan(clanTag);
     
-    // Answer the callback query
-    await ctx.answerCallbackQuery();
-    
-    // War log feature - placeholder for future implementation
-    await ctx.reply("War log feature will be available in a future update.", {
-      parse_mode: 'Markdown',
-      reply_markup: createBackToClanKeyboard(clanTag)
+    await ctx.editMessageText(clanUtils.formatClanInfo(clan), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: clanUtils.createClanKeyboard(clanTag)
     });
-  } catch (error) {
-    console.error('Error with war log:', error);
-    await ctx.answerCallbackQuery({ text: 'Error with war log feature', show_alert: true });
-  }
-});
-
-composer.callbackQuery(/^currentwar_(.+)$/, async (ctx) => {
-  try {
-    // Extract clan tag from callback data
-    const clanTag = ctx.match[1];
     
-    // Answer the callback query
     await ctx.answerCallbackQuery();
-    
-    // Current war feature - placeholder for future implementation
-    await ctx.reply("Current war feature will be available in a future update.", {
-      parse_mode: 'Markdown',
-      reply_markup: createBackToClanKeyboard(clanTag)
-    });
   } catch (error) {
-    console.error('Error with current war:', error);
-    await ctx.answerCallbackQuery({ text: 'Error with current war feature', show_alert: true });
+    await ctx.answerCallbackQuery('Error fetching clan info');
+    console.error('Error fetching clan info:', error);
   }
 });
 

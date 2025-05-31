@@ -1,79 +1,44 @@
-import { Player } from '../types/coc.js';
+import { 
+  Player, 
+  PlayerRankingList, 
+  PlayerVersusBattleRankingList,
+  LeagueRankingList
+} from '../types/coc.js';
 import { InlineKeyboard } from 'grammy';
-
-/**
- * Escape special Markdown characters
- */
-function escapeMarkdown(text: string): string {
-  return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
-}
+import { escapeMarkdown } from './formatClan.js';
 
 /**
  * Format player data for display in Telegram
  */
 export function formatPlayerInfo(player: Player): string {
   const clanInfo = player.clan 
-    ? `\n🛡 Clan: ${escapeMarkdown(player.clan.name)} (Level ${player.clan.clanLevel})` 
-    : '\n🛡 Clan: None';
+    ? `\n🛡️ Clan: ${escapeMarkdown(player.clan.name)} \\(${escapeMarkdown(player.clan.tag)}\\)`
+    : '\n🛡️ Clan: None';
   
   const leagueInfo = player.league 
     ? `\n🏆 League: ${escapeMarkdown(player.league.name)}` 
     : '\n🏆 League: None';
 
+  const builderBaseInfo = player.builderHallLevel 
+    ? `\n\n*Builder Base*\n🏠 Builder Hall: ${player.builderHallLevel}\n🏆 Versus Trophies: ${player.versusTrophies}\n🏅 Best Versus Trophies: ${player.bestVersusTrophies}\n⚔️ Versus Battle Wins: ${player.versusBattleWins}`
+    : '';
+
   return `
-*${escapeMarkdown(player.name)}* (${player.tag})
-👑 TH Level: ${player.townHallLevel}
-⭐ Experience: Level ${player.expLevel}
-${leagueInfo}
-🏆 Trophies: ${player.trophies} (Best: ${player.bestTrophies})
+*${escapeMarkdown(player.name)}* \\(${escapeMarkdown(player.tag)}\\)
 ${clanInfo}
-⚔️ War Stars: ${player.warStars}
-🗡 Attack Wins: ${player.attackWins}
-🛡 Defense Wins: ${player.defenseWins}
-🎁 Donations: ${player.donations || 0}
-📦 Donations Received: ${player.donationsReceived || 0}
+${leagueInfo}
+👑 Experience Level: ${player.expLevel}
+🏠 Town Hall: ${player.townHallLevel}
+🏆 Trophies: ${player.trophies}
+🏅 Best Trophies: ${player.bestTrophies}
+⭐ War Stars: ${player.warStars}
+⚔️ Attack Wins: ${player.attackWins}
+🛡️ Defense Wins: ${player.defenseWins}
+${player.role ? `\n👤 Role: ${escapeMarkdown(player.role)}` : ''}
+${player.donations !== undefined ? `\n📦 Donations: ${player.donations}` : ''}
+${player.donationsReceived !== undefined ? `\n📥 Donations Received: ${player.donationsReceived}` : ''}
+${builderBaseInfo}
 `.trim();
-}
-
-/**
- * Format hero information from player data
- */
-export function formatHeroes(player: Player): string {
-  if (!player.heroes || player.heroes.length === 0) {
-    return 'No heroes unlocked';
-  }
-
-  return player.heroes
-    .filter(hero => hero.village === 'home')
-    .map(hero => `${escapeMarkdown(hero.name)}: Level ${hero.level}/${hero.maxLevel}`)
-    .join('\n');
-}
-
-/**
- * Format troops information from player data
- */
-export function formatTroops(player: Player): string {
-  if (!player.troops || player.troops.length === 0) {
-    return 'No troops data available';
-  }
-
-  // Get home village troops and sort by level (highest first)
-  const homeTroops = player.troops
-    .filter(troop => troop.village === 'home')
-    .sort((a, b) => {
-      // Sort by percentage of max level first
-      const aPercent = a.level / a.maxLevel;
-      const bPercent = b.level / b.maxLevel;
-      
-      return bPercent - aPercent;
-    });
-
-  // Get top 10 troops
-  const topTroops = homeTroops.slice(0, 10);
-  
-  return topTroops
-    .map(troop => `${escapeMarkdown(troop.name)}: Level ${troop.level}/${troop.maxLevel}`)
-    .join('\n');
 }
 
 /**
@@ -81,8 +46,8 @@ export function formatTroops(player: Player): string {
  */
 export function createPlayerKeyboard(playerTag: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text("Heroes", `heroes_${playerTag}`)
     .text("Troops", `troops_${playerTag}`)
+    .text("Heroes", `heroes_${playerTag}`)
     .row()
     .text("Spells", `spells_${playerTag}`)
     .text("Achievements", `achievements_${playerTag}`);
@@ -97,44 +62,195 @@ export function createBackToPlayerKeyboard(playerTag: string): InlineKeyboard {
 }
 
 /**
- * Format spells information from player data
+ * Format player troops for display in Telegram
  */
-export function formatSpells(player: Player): string {
-  if (!player.spells || player.spells.length === 0) {
-    return 'No spells data available';
+export function formatPlayerTroops(player: Player): string {
+  if (!player.troops || player.troops.length === 0) {
+    return 'No troop data available';
   }
 
-  return player.spells
-    .filter(spell => spell.village === 'home')
-    .map(spell => `${escapeMarkdown(spell.name)}: Level ${spell.level}/${spell.maxLevel}`)
-    .join('\n');
+  // Filter home village troops
+  const homeVillageTroops = player.troops.filter(troop => troop.village === 'home');
+  
+  // Sort troops by name
+  const sortedTroops = [...homeVillageTroops].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const troopsList = sortedTroops.map(troop => {
+    const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Troops for ${escapeMarkdown(player.name)}*
+
+${troopsList}
+`.trim();
 }
 
 /**
- * Format achievements information from player data
+ * Format player heroes for display in Telegram
  */
-export function formatAchievements(player: Player): string {
-  if (!player.achievements || player.achievements.length === 0) {
-    return 'No achievements data available';
+export function formatPlayerHeroes(player: Player): string {
+  if (!player.heroes || player.heroes.length === 0) {
+    return 'No hero data available';
   }
 
-  // Get top 10 achievements sorted by stars
-  const topAchievements = [...player.achievements]
-    .filter(achievement => achievement.village === 'home')
-    .sort((a, b) => b.stars - a.stars)
-    .slice(0, 10);
+  // Filter home village heroes
+  const homeVillageHeroes = player.heroes.filter(hero => hero.village === 'home');
   
-  return topAchievements
-    .map(achievement => `${escapeMarkdown(achievement.name)}: ⭐ ${achievement.stars} (${achievement.value}/${achievement.target})`)
-    .join('\n');
+  // Sort heroes by name
+  const sortedHeroes = [...homeVillageHeroes].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const heroesList = sortedHeroes.map(hero => {
+    const maxLevelIndicator = hero.level === hero.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(hero.name)}: ${hero.level}/${hero.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Heroes for ${escapeMarkdown(player.name)}*
+
+${heroesList}
+`.trim();
+}
+
+/**
+ * Format player spells for display in Telegram
+ */
+export function formatPlayerSpells(player: Player): string {
+  if (!player.spells || player.spells.length === 0) {
+    return 'No spell data available';
+  }
+
+  // Filter home village spells
+  const homeVillageSpells = player.spells.filter(spell => spell.village === 'home');
+  
+  // Sort spells by name
+  const sortedSpells = [...homeVillageSpells].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const spellsList = sortedSpells.map(spell => {
+    const maxLevelIndicator = spell.level === spell.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Spells for ${escapeMarkdown(player.name)}*
+
+${spellsList}
+`.trim();
+}
+
+/**
+ * Format player achievements for display in Telegram
+ */
+export function formatPlayerAchievements(player: Player): string {
+  if (!player.achievements || player.achievements.length === 0) {
+    return 'No achievement data available';
+  }
+
+  // Get completed achievements (3 stars)
+  const completedAchievements = player.achievements.filter(achievement => achievement.stars === 3);
+  
+  // Get in-progress achievements
+  const inProgressAchievements = player.achievements.filter(achievement => achievement.stars < 3);
+  
+  // Sort in-progress achievements by completion percentage
+  const sortedInProgress = [...inProgressAchievements].sort((a, b) => {
+    const percentA = (a.value / a.target) * 100;
+    const percentB = (b.value / b.target) * 100;
+    return percentB - percentA;
+  });
+  
+  // Get top 5 in-progress achievements
+  const topInProgress = sortedInProgress.slice(0, 5);
+  
+  const inProgressList = topInProgress.map(achievement => {
+    const percent = Math.floor((achievement.value / achievement.target) * 100);
+    const stars = '⭐'.repeat(achievement.stars) + '☆'.repeat(3 - achievement.stars);
+    return `${stars} ${escapeMarkdown(achievement.name)}: ${achievement.value}/${achievement.target} \\(${percent}%\\)`;
+  }).join('\n');
+  
+  return `
+*Achievements for ${escapeMarkdown(player.name)}*
+
+*Top In-Progress Achievements:*
+${inProgressList}
+
+*Completed: ${completedAchievements.length}/${player.achievements.length}*
+`.trim();
+}
+
+/**
+ * Format player rankings
+ */
+export function formatPlayerRankings(rankings: PlayerRankingList): string {
+  if (!rankings.items || rankings.items.length === 0) {
+    return 'No player ranking data available';
+  }
+  
+  const rankingsList = rankings.items.slice(0, 10).map(player => {
+    const clanInfo = player.clan ? ` | ${escapeMarkdown(player.clan.name)}` : '';
+    return `${player.rank}\\. ${escapeMarkdown(player.name)} \\- ${player.trophies} 🏆${clanInfo}`;
+  }).join('\n');
+  
+  return `
+*Top Ranked Players*
+
+${rankingsList}
+${rankings.items.length > 10 ? `\n_...and ${rankings.items.length - 10} more players_` : ''}
+`.trim();
+}
+
+/**
+ * Format player versus battle rankings
+ */
+export function formatPlayerVersusBattleRankings(rankings: PlayerVersusBattleRankingList): string {
+  if (!rankings.items || rankings.items.length === 0) {
+    return 'No player versus battle ranking data available';
+  }
+  
+  const rankingsList = rankings.items.slice(0, 10).map(player => {
+    const clanInfo = player.clan ? ` | ${escapeMarkdown(player.clan.name)}` : '';
+    return `${player.rank}\\. ${escapeMarkdown(player.name)} \\- ${player.versusTrophies} 🏆${clanInfo}`;
+  }).join('\n');
+  
+  return `
+*Top Ranked Players \\(Builder Base\\)*
+
+${rankingsList}
+${rankings.items.length > 10 ? `\n_...and ${rankings.items.length - 10} more players_` : ''}
+`.trim();
+}
+
+/**
+ * Format league season rankings
+ */
+export function formatLeagueSeasonRankings(rankings: LeagueRankingList, leagueName: string, seasonId: string): string {
+  if (!rankings.items || rankings.items.length === 0) {
+    return 'No league season ranking data available';
+  }
+  
+  const rankingsList = rankings.items.slice(0, 10).map(player => {
+    const clanInfo = player.clan ? ` | ${escapeMarkdown(player.clan.name)}` : '';
+    return `${player.rank}\\. ${escapeMarkdown(player.name)} \\- ${player.trophies} 🏆${clanInfo}`;
+  }).join('\n');
+  
+  return `
+*${escapeMarkdown(leagueName)} \\- Season ${seasonId}*
+
+${rankingsList}
+${rankings.items.length > 10 ? `\n_...and ${rankings.items.length - 10} more players_` : ''}
+`.trim();
 }
 
 export default {
   formatPlayerInfo,
-  formatHeroes,
-  formatTroops,
-  formatSpells,
-  formatAchievements,
+  formatPlayerTroops,
+  formatPlayerHeroes,
+  formatPlayerSpells,
+  formatPlayerAchievements,
+  formatPlayerRankings,
+  formatPlayerVersusBattleRankings,
+  formatLeagueSeasonRankings,
   createPlayerKeyboard,
   createBackToPlayerKeyboard,
 }; 

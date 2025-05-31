@@ -1,18 +1,22 @@
-import { config } from 'dotenv';
+import dotenv from 'dotenv';
 
-// Load environment variables from .env file
-config();
+// Load environment variables
+dotenv.config();
 
-// Check if required environment variables are set
-if (!process.env.BOT_TOKEN) {
+// Configuration object
+const config = {
+  BOT_TOKEN: process.env.BOT_TOKEN || '',
+  COC_API_KEY: process.env.COC_API_KEY || '',
+  NODE_ENV: process.env.NODE_ENV || 'development'
+};
+
+// Validate required environment variables
+if (!config.BOT_TOKEN) {
   throw new Error('BOT_TOKEN environment variable is required');
 }
 
-if (!process.env.COC_API_KEY) {
+if (!config.COC_API_KEY) {
   throw new Error('COC_API_KEY environment variable is required');
 }
 
-export default {
-  botToken: process.env.BOT_TOKEN,
-  cocApiKey: process.env.COC_API_KEY,
-}; 
+export default config; 

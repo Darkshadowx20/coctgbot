@@ -1,194 +1,258 @@
 import { Composer } from 'grammy';
-import { getPlayer } from '../services/cocApi.js';
-import { 
-  formatPlayerInfo, 
-  formatHeroes, 
-  formatTroops,
-  formatSpells,
-  formatAchievements,
-  createPlayerKeyboard,
-  createBackToPlayerKeyboard
-} from '../utils/formatPlayer.js';
+import { MyContext } from '../types/bot.js';
+import cocApi from '../services/cocApi.js';
+import playerUtils from '../utils/formatPlayer.js';
+import { handleApiError } from '../utils/errors.js';
 
-// Create a composer to handle /player commands
-const composer = new Composer();
+const composer = new Composer<MyContext>();
 
-// Handler for /player command
+/**
+ * Command to get player information
+ * Usage: /player <player_tag>
+ */
 composer.command('player', async (ctx) => {
-  const args = ctx.match.trim();
+  const args = ctx.message?.text?.split(' ').slice(1);
   
-  if (!args) {
-    return ctx.reply(
-      'Please provide a player tag.\n' +
-      'Usage: /player <tag>\n' +
-      'Example: /player #ABC123'
-    );
+  if (!args || args.length === 0 || !args[0]) {
+    return ctx.reply('Usage: /player <player_tag>\nExample: /player #2PGGJ20V');
+  }
+  
+  let playerTag = args[0];
+  
+  // Add # if missing
+  if (!playerTag.startsWith('#')) {
+    playerTag = '#' + playerTag;
   }
 
   try {
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
-    }
+    const player = await cocApi.getPlayer(playerTag);
     
-    // Get player data
-    const player = await getPlayer(args);
-    
-    // Format and send player info with inline keyboard
-    await ctx.reply(formatPlayerInfo(player), {
-      parse_mode: 'Markdown',
-      reply_markup: createPlayerKeyboard(player.tag)
+    await ctx.reply(playerUtils.formatPlayerInfo(player), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createPlayerKeyboard(playerTag)
     });
-    
   } catch (error) {
-    console.error('Error fetching player:', error);
-    await ctx.reply(
-      `Error: ${error instanceof Error ? error.message : 'Failed to fetch player data'}\n` +
-      'Make sure the player tag is correct and try again.'
-    );
+    await handleApiError(ctx, error, 'player');
   }
 });
 
-// Handle back button to player info
-composer.callbackQuery(/^back_to_player_(.+)$/, async (ctx) => {
+/**
+ * Command to search for top players
+ * Usage: /topplayers [country_code]
+ */
+composer.command(['topplayers', 'top'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  let locationId = 0; // Global by default
+  
+  if (args && args.length > 0 && args[0]) {
+    // Try to get location by country code
+    try {
+      const locations = await cocApi.getLocations();
+      const location = locations.items.find((loc: any) => 
+        loc.countryCode && loc.countryCode.toLowerCase() === args[0].toLowerCase()
+      );
+      
+      if (location) {
+        locationId = location.id;
+      } else {
+        return ctx.reply(`Could not find location with country code: ${args[0]}\nUsing global rankings instead.`);
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      // Continue with global rankings
+    }
+  }
+  
   try {
-    // Extract player tag from callback data
-    const playerTag = ctx.match[1];
+    const rankings = await cocApi.getPlayerRankings(locationId);
     
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
-    }
-    
-    // Get player data
-    const player = await getPlayer(playerTag);
-    
-    // Answer the callback query
-    await ctx.answerCallbackQuery({ text: "Returning to player info" });
-    
-    // Send player info
-    await ctx.editMessageText(formatPlayerInfo(player), {
-      parse_mode: 'Markdown',
-      reply_markup: createPlayerKeyboard(player.tag)
+    await ctx.reply(playerUtils.formatPlayerRankings(rankings), {
+      parse_mode: 'MarkdownV2'
     });
   } catch (error) {
-    console.error('Error returning to player info:', error);
-    await ctx.answerCallbackQuery({ text: 'Error returning to player info', show_alert: true });
+    await handleApiError(ctx, error, 'player rankings');
   }
 });
 
-// Handle callback queries for player details
-composer.callbackQuery(/^heroes_(.+)$/, async (ctx) => {
+/**
+ * Command to search for top builder base players
+ * Usage: /topbuilder [country_code]
+ */
+composer.command(['topbuilder', 'topbb'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  let locationId = 0; // Global by default
+  
+  if (args && args.length > 0 && args[0]) {
+    // Try to get location by country code
+    try {
+      const locations = await cocApi.getLocations();
+      const location = locations.items.find((loc: any) => 
+        loc.countryCode && loc.countryCode.toLowerCase() === args[0].toLowerCase()
+      );
+      
+      if (location) {
+        locationId = location.id;
+      } else {
+        return ctx.reply(`Could not find location with country code: ${args[0]}\nUsing global rankings instead.`);
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      // Continue with global rankings
+    }
+  }
+  
   try {
-    // Extract player tag from callback data
-    const playerTag = ctx.match[1];
+    const rankings = await cocApi.getPlayerVersusBattleRankings(locationId);
     
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
-    }
-    
-    // Get player data
-    const player = await getPlayer(playerTag);
-    
-    // Answer the callback query
-    await ctx.answerCallbackQuery();
-    
-    // Send heroes info with back button
-    await ctx.reply(`*Heroes of ${escapeMarkdown(player.name)}:*\n\n${formatHeroes(player)}`, {
-      parse_mode: 'Markdown',
-      reply_markup: createBackToPlayerKeyboard(player.tag)
+    await ctx.reply(playerUtils.formatPlayerVersusBattleRankings(rankings), {
+      parse_mode: 'MarkdownV2'
     });
   } catch (error) {
-    console.error('Error fetching player heroes:', error);
-    await ctx.answerCallbackQuery({ text: 'Error fetching heroes data', show_alert: true });
+    await handleApiError(ctx, error, 'builder base rankings');
   }
 });
 
+/**
+ * Command to get league rankings
+ * Usage: /leaguerankings <league_id> [season_id]
+ */
+composer.command(['leaguerankings', 'leagueranks'], async (ctx) => {
+  const args = ctx.message?.text?.split(' ').slice(1);
+  
+  if (!args || args.length === 0 || !args[0]) {
+    try {
+      // Get leagues and display them
+      const leagues = await cocApi.getLeagues();
+      const leaguesList = leagues.items
+        .filter(league => league.id >= 29000000) // Filter out lower leagues
+        .map(league => `${league.name}: ID ${league.id}`)
+        .join('\n');
+      
+      return ctx.reply(`Usage: /leaguerankings <league_id> [season_id]\n\nAvailable leagues:\n${leaguesList}`);
+    } catch (error) {
+      return ctx.reply('Usage: /leaguerankings <league_id> [season_id]\nExample: /leaguerankings 29000022');
+    }
+  }
+  
+  const leagueId = parseInt(args[0]);
+  let seasonId = 'latest';
+  
+  if (args.length > 1 && args[1]) {
+    seasonId = args[1];
+    }
+    
+  try {
+    // Get league info for the name
+    let leagueName = 'League';
+    try {
+      const league = await cocApi.getLeague(leagueId);
+      leagueName = league.name;
+    } catch (error) {
+      console.error('Error fetching league info:', error);
+      // Continue with default name
+    }
+    
+    const rankings = await cocApi.getLeagueSeasonRankings(leagueId, seasonId);
+    
+    await ctx.reply(playerUtils.formatLeagueSeasonRankings(rankings, leagueName, seasonId), {
+      parse_mode: 'MarkdownV2'
+    });
+  } catch (error) {
+    await handleApiError(ctx, error, 'league rankings');
+  }
+});
+
+/**
+ * Callback queries for player details
+ */
 composer.callbackQuery(/^troops_(.+)$/, async (ctx) => {
-  try {
-    // Extract player tag from callback data
     const playerTag = ctx.match[1];
     
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
-    }
+  try {
+    const player = await cocApi.getPlayer(playerTag);
     
-    // Get player data
-    const player = await getPlayer(playerTag);
-    
-    // Answer the callback query
-    await ctx.answerCallbackQuery();
-    
-    // Send troops info with back button
-    await ctx.reply(`*Top Troops of ${escapeMarkdown(player.name)}:*\n\n${formatTroops(player)}`, {
-      parse_mode: 'Markdown',
-      reply_markup: createBackToPlayerKeyboard(player.tag)
+    await ctx.editMessageText(playerUtils.formatPlayerTroops(player), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createBackToPlayerKeyboard(playerTag)
     });
+    
+    await ctx.answerCallbackQuery();
   } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching player troops');
     console.error('Error fetching player troops:', error);
-    await ctx.answerCallbackQuery({ text: 'Error fetching troops data', show_alert: true });
+  }
+});
+
+composer.callbackQuery(/^heroes_(.+)$/, async (ctx) => {
+  const playerTag = ctx.match[1];
+  
+  try {
+    const player = await cocApi.getPlayer(playerTag);
+    
+    await ctx.editMessageText(playerUtils.formatPlayerHeroes(player), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createBackToPlayerKeyboard(playerTag)
+    });
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching player heroes');
+    console.error('Error fetching player heroes:', error);
   }
 });
 
 composer.callbackQuery(/^spells_(.+)$/, async (ctx) => {
-  try {
-    // Extract player tag from callback data
     const playerTag = ctx.match[1];
     
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
-    }
+  try {
+    const player = await cocApi.getPlayer(playerTag);
     
-    // Get player data
-    const player = await getPlayer(playerTag);
-    
-    // Answer the callback query
-    await ctx.answerCallbackQuery();
-    
-    // Send spells info with back button
-    await ctx.reply(`*Spells of ${escapeMarkdown(player.name)}:*\n\n${formatSpells(player)}`, {
-      parse_mode: 'Markdown',
-      reply_markup: createBackToPlayerKeyboard(player.tag)
+    await ctx.editMessageText(playerUtils.formatPlayerSpells(player), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createBackToPlayerKeyboard(playerTag)
     });
+    
+    await ctx.answerCallbackQuery();
   } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching player spells');
     console.error('Error fetching player spells:', error);
-    await ctx.answerCallbackQuery({ text: 'Error fetching spells data', show_alert: true });
   }
 });
 
 composer.callbackQuery(/^achievements_(.+)$/, async (ctx) => {
-  try {
-    // Extract player tag from callback data
     const playerTag = ctx.match[1];
     
-    // Show typing indicator
-    if (ctx.chat) {
-      await ctx.api.sendChatAction(ctx.chat.id, 'typing');
-    }
+  try {
+    const player = await cocApi.getPlayer(playerTag);
     
-    // Get player data
-    const player = await getPlayer(playerTag);
-    
-    // Answer the callback query
-    await ctx.answerCallbackQuery();
-    
-    // Send achievements info with back button
-    await ctx.reply(`*Top Achievements of ${escapeMarkdown(player.name)}:*\n\n${formatAchievements(player)}`, {
-      parse_mode: 'Markdown',
-      reply_markup: createBackToPlayerKeyboard(player.tag)
+    await ctx.editMessageText(playerUtils.formatPlayerAchievements(player), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createBackToPlayerKeyboard(playerTag)
     });
+    
+    await ctx.answerCallbackQuery();
   } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching player achievements');
     console.error('Error fetching player achievements:', error);
-    await ctx.answerCallbackQuery({ text: 'Error fetching achievements data', show_alert: true });
   }
 });
 
-// Helper function to escape markdown
-function escapeMarkdown(text: string): string {
-  return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
+composer.callbackQuery(/^back_to_player_(.+)$/, async (ctx) => {
+  const playerTag = ctx.match[1];
+  
+  try {
+    const player = await cocApi.getPlayer(playerTag);
+    
+    await ctx.editMessageText(playerUtils.formatPlayerInfo(player), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createPlayerKeyboard(playerTag)
+    });
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching player info');
+    console.error('Error fetching player info:', error);
 }
+});
 
 export default composer; 

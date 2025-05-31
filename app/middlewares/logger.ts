@@ -1,24 +1,28 @@
 import { NextFunction } from 'grammy';
-import type { Context } from 'grammy';
+import { MyContext } from '../types/bot.js';
 
 /**
- * Logger middleware for Grammy
- * Logs all incoming messages and commands
+ * Simple logging middleware
  */
-export function logger(ctx: Context, next: NextFunction) {
-  const from = ctx.from?.username 
-    ? `@${ctx.from.username}` 
-    : ctx.from?.first_name || 'Unknown';
-
-  const chatType = ctx.chat?.type || 'unknown';
+export default async (ctx: MyContext, next: NextFunction): Promise<void> => {
+  const start = Date.now();
   
-  if (ctx.message?.text) {
-    console.log(`[${new Date().toISOString()}] ${from} in ${chatType}: ${ctx.message.text}`);
-  } else if (ctx.callbackQuery?.data) {
-    console.log(`[${new Date().toISOString()}] ${from} callback: ${ctx.callbackQuery.data}`);
-  }
-  
-  return next();
-}
+  // Get user information
+  const userId = ctx.from?.id ?? 'unknown';
+  const username = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name ?? 'unknown';
 
-export default logger; 
+  // Get message information
+  const messageText = ctx.message?.text ?? ctx.callbackQuery?.data ?? 'unknown';
+  const chatType = ctx.chat?.type ?? 'unknown';
+  const chatId = ctx.chat?.id ?? 'unknown';
+  
+  // Log the request
+  console.log(`[${new Date().toISOString()}] Request from ${username} (${userId}) in ${chatType} (${chatId}): ${messageText}`);
+  
+  // Process the request
+  await next();
+  
+  // Log the response time
+  const responseTime = Date.now() - start;
+  console.log(`[${new Date().toISOString()}] Response time: ${responseTime}ms`);
+}; 
