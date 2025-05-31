@@ -246,16 +246,17 @@ export async function getClanWarLog(
 }
 
 /**
- * Get information about clan's current clan war league group
- * GET /clans/{clanTag}/currentwar/leaguegroup
+ * Get current war league group for a clan
  */
 export async function getCurrentWarLeagueGroup(clanTag: string): Promise<ClanWarLeagueGroup> {
-  const encodedTag = encodeTag(clanTag);
   try {
-    const response = await api.get(`/clans/${encodedTag}/currentwar/leaguegroup`);
+    const response = await api.get(`/clans/${encodeTag(clanTag)}/currentwar/leaguegroup`);
     return response.data;
   } catch (error) {
-    return handleApiError(error, 'get current war league group');
+    if (axios.isAxiosError(error) && error.response?.data?.reason === 'notFound') {
+      throw new Error('notFound');
+    }
+    throw handleApiError(error, 'get current war league group');
   }
 }
 

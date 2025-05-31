@@ -298,7 +298,7 @@ composer.command(['topbuilderclans', 'topbbclans'], async (ctx) => {
 /**
  * Callback queries for clan details
  */
-composer.callbackQuery(/^clan_members_(.+)$/, async (ctx) => {
+composer.callbackQuery(/^members_(.+)$/, async (ctx) => {
   const clanTag = ctx.match[1];
   
   try {
@@ -311,12 +311,36 @@ composer.callbackQuery(/^clan_members_(.+)$/, async (ctx) => {
     
     await ctx.answerCallbackQuery();
   } catch (error) {
-    await ctx.answerCallbackQuery('Error fetching clan members');
     console.error('Error fetching clan members:', error);
+    await ctx.answerCallbackQuery({
+      text: 'Error fetching clan members',
+      show_alert: true
+    });
   }
 });
 
-composer.callbackQuery(/^clan_warlog_(.+)$/, async (ctx) => {
+composer.callbackQuery(/^donators_(.+)$/, async (ctx) => {
+  const clanTag = ctx.match[1];
+  
+  try {
+    const members = await cocApi.getClanMembers(clanTag);
+    
+    await ctx.editMessageText(clanUtils.formatTopDonators(members), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+    });
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    console.error('Error fetching clan donators:', error);
+    await ctx.answerCallbackQuery({
+      text: 'Error fetching clan donators',
+      show_alert: true
+    });
+  }
+});
+
+composer.callbackQuery(/^warlog_(.+)$/, async (ctx) => {
   const clanTag = ctx.match[1];
   
   try {
@@ -329,12 +353,15 @@ composer.callbackQuery(/^clan_warlog_(.+)$/, async (ctx) => {
     
     await ctx.answerCallbackQuery();
   } catch (error) {
-    await ctx.answerCallbackQuery('Error fetching war log');
-    console.error('Error fetching war log:', error);
+    console.error('Error fetching clan war log:', error);
+    await ctx.answerCallbackQuery({
+      text: 'Error fetching clan war log',
+      show_alert: true
+    });
   }
 });
 
-composer.callbackQuery(/^clan_currentwar_(.+)$/, async (ctx) => {
+composer.callbackQuery(/^currentwar_(.+)$/, async (ctx) => {
   const clanTag = ctx.match[1];
   
   try {
@@ -347,12 +374,35 @@ composer.callbackQuery(/^clan_currentwar_(.+)$/, async (ctx) => {
     
     await ctx.answerCallbackQuery();
   } catch (error) {
-    await ctx.answerCallbackQuery('Error fetching current war');
     console.error('Error fetching current war:', error);
+    await ctx.answerCallbackQuery({
+      text: 'Error fetching current war',
+      show_alert: true
+    });
   }
 });
 
-composer.callbackQuery(/^clan_capital_(.+)$/, async (ctx) => {
+composer.callbackQuery(/^warleague_(.+)$/, async (ctx) => {
+  const clanTag = ctx.match[1];
+  try {
+    const leagueGroup = await cocApi.getCurrentWarLeagueGroup(clanTag);
+    const message = clanUtils.formatClanWarLeagueGroup(leagueGroup);
+    await ctx.editMessageText(message, {
+      parse_mode: 'MarkdownV2',
+      reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error && error.message === 'notFound'
+      ? '*War League Status*\n\nThis clan is not currently participating in a Clan War League\\.'
+      : '*Error*\n\nFailed to fetch war league information\\.';
+    await ctx.editMessageText(errorMessage, {
+      parse_mode: 'MarkdownV2',
+      reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+    });
+  }
+});
+
+composer.callbackQuery(/^capitalraids_(.+)$/, async (ctx) => {
   const clanTag = ctx.match[1];
   
   try {
@@ -372,8 +422,11 @@ composer.callbackQuery(/^clan_capital_(.+)$/, async (ctx) => {
     
     await ctx.answerCallbackQuery();
   } catch (error) {
-    await ctx.answerCallbackQuery('Error fetching capital raid seasons');
     console.error('Error fetching capital raid seasons:', error);
+    await ctx.answerCallbackQuery({
+      text: 'Error fetching capital raid seasons',
+      show_alert: true
+    });
   }
 });
 
@@ -390,8 +443,11 @@ composer.callbackQuery(/^back_to_clan_(.+)$/, async (ctx) => {
     
     await ctx.answerCallbackQuery();
   } catch (error) {
-    await ctx.answerCallbackQuery('Error fetching clan info');
-    console.error('Error fetching clan info:', error);
+    console.error('Error handling back button:', error);
+    await ctx.answerCallbackQuery({
+      text: 'Error fetching clan info',
+      show_alert: true
+    });
   }
 });
 

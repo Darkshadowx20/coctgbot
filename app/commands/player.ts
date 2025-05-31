@@ -238,21 +238,41 @@ composer.callbackQuery(/^achievements_(.+)$/, async (ctx) => {
 });
 
 composer.callbackQuery(/^back_to_player_(.+)$/, async (ctx) => {
-  const playerTag = ctx.match[1];
-  
   try {
+    const playerTag = ctx.match[1];
     const player = await cocApi.getPlayer(playerTag);
     
-    await ctx.editMessageText(playerUtils.formatPlayerInfo(player), {
+    if (!player) {
+      await ctx.answerCallbackQuery({
+        text: 'Player not found',
+        show_alert: true
+      });
+      return;
+    }
+
+    const message = playerUtils.formatPlayerInfo(player);
+    const keyboard = playerUtils.createPlayerKeyboard(playerTag);
+
+    // Check if the message content is different before editing
+    const currentMessage = ctx.callbackQuery.message;
+    if (currentMessage && currentMessage.text === message) {
+      // If content is the same, just answer the callback query
+      await ctx.answerCallbackQuery();
+      return;
+    }
+
+    await ctx.editMessageText(message, {
       parse_mode: 'MarkdownV2',
-      reply_markup: playerUtils.createPlayerKeyboard(playerTag)
+      reply_markup: keyboard
     });
-    
     await ctx.answerCallbackQuery();
   } catch (error) {
-    await ctx.answerCallbackQuery('Error fetching player info');
-    console.error('Error fetching player info:', error);
-}
+    console.error('Error handling back button:', error);
+    await ctx.answerCallbackQuery({
+      text: 'Error fetching player info',
+      show_alert: true
+    });
+  }
 });
 
 export default composer; 

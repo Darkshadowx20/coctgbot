@@ -16,6 +16,7 @@ import { InlineKeyboard } from 'grammy';
  * Escape special Markdown characters
  */
 export function escapeMarkdown(text: string): string {
+  if (!text) return '';
   return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
 }
 
@@ -67,16 +68,21 @@ export function formatClanMembers(members: ClanMember[] | ClanMemberList): strin
   const sortedMembers = [...memberArray].sort((a, b) => a.clanRank - b.clanRank);
   
   // Get top 10 members
-  const topMembers = sortedMembers.slice(0, 10);
+  const topMembers = sortedMembers.slice(0, 20);
   
-  const membersList = topMembers.map(member => 
-    `${member.clanRank}\\. ${escapeMarkdown(member.name)} \\(${escapeMarkdown(member.role)}\\) \\- ${member.trophies} 🏆 | Donations: ${member.donations}`
-  ).join('\n');
+  const membersList = topMembers.map(member => {
+    const name = escapeMarkdown(member.name);
+    const role = escapeMarkdown(member.role);
+    const rank = escapeMarkdown(member.clanRank.toString());
+    return `${rank}\\. ${name} \\(${role}\\) \\- ${member.trophies} 🏆 \\| Donations: ${member.donations}`;
+  }).join('\n');
+  
+  const remainingCount = memberArray.length - 20;
+  const remainingText = remainingCount > 0 ? `\n_\\.\\.\\.and ${remainingCount} more members_` : '';
   
   return `
 *Clan Members*
-${membersList}
-${memberArray.length > 10 ? `\n_...and ${memberArray.length - 10} more members_` : ''}
+${membersList}${remainingText}
 `.trim();
 }
 
@@ -122,7 +128,7 @@ export function formatTopDonators(members: ClanMember[] | ClanMemberList): strin
   const topDonators = sortedMembers.slice(0, 10);
   
   const donatorsList = topDonators.map(member => 
-    `${escapeMarkdown(member.name)} \\(${escapeMarkdown(member.role)}\\): ${member.donations} donated | ${member.donationsReceived} received`
+    `${escapeMarkdown(member.name)} \\(${escapeMarkdown(member.role)}\\): ${member.donations} donated \\| ${member.donationsReceived} received`
   ).join('\n');
   
   return `
@@ -145,9 +151,11 @@ export function formatClanWarLog(warLog: WarLog, clanName: string): string {
   const warsList = recentWars.map(war => {
     const result = war.result === 'win' ? '✅ Won' : war.result === 'lose' ? '❌ Lost' : '🤝 Tied';
     const endDate = new Date(war.endTime).toLocaleDateString();
+    const clanDestruction = war.clan.destructionPercentage.toFixed(2).replace('.', '\\.');
+    const opponentDestruction = war.opponent.destructionPercentage.toFixed(2).replace('.', '\\.');
     return `${result} vs ${escapeMarkdown(war.opponent.name)} \\(${war.teamSize}v${war.teamSize}\\) \\- ${endDate}
     Stars: ${war.clan.stars}⭐ \\- ${war.opponent.stars}⭐
-    Destruction: ${war.clan.destructionPercentage.toFixed(2)}% \\- ${war.opponent.destructionPercentage.toFixed(2)}%`;
+    Destruction: ${clanDestruction}% \\- ${opponentDestruction}%`;
   }).join('\n\n');
   
   return `
@@ -195,8 +203,8 @@ export function formatCurrentWar(war: ClanWar): string {
   const clanStars = war.clan.stars || 0;
   const opponentStars = war.opponent.stars || 0;
   
-  const clanDestruction = war.clan.destructionPercentage?.toFixed(2) || '0.00';
-  const opponentDestruction = war.opponent.destructionPercentage?.toFixed(2) || '0.00';
+  const clanDestruction = (war.clan.destructionPercentage?.toFixed(2) || '0.00').replace('.', '\\.');
+  const opponentDestruction = (war.opponent.destructionPercentage?.toFixed(2) || '0.00').replace('.', '\\.');
   
   const clanAttacks = war.clan.attacks || 0;
   const totalPossibleAttacks = war.teamSize * 2;
@@ -286,8 +294,6 @@ export function formatClanWarLeagueGroup(leagueGroup: ClanWarLeagueGroup): strin
   return `
 *Clan War League Group \\- Season ${season}*
 
-*League:* ${escapeMarkdown(leagueGroup.name)}
-
 *Clans in group:*
 ${clansList}
 
@@ -304,15 +310,19 @@ export function formatClanRankings(rankings: ClanRankingList): string {
   }
   
   const rankingsList = rankings.items.slice(0, 10).map(clan => {
-    const locationInfo = clan.location ? ` | ${escapeMarkdown(clan.location.name)}` : '';
-    return `${clan.rank}\\. ${escapeMarkdown(clan.name)} \\- ${clan.clanPoints} 🏆 | Lvl ${clan.clanLevel}${locationInfo}`;
+    const name = escapeMarkdown(clan.name);
+    const rank = escapeMarkdown(clan.rank.toString());
+    const locationInfo = clan.location ? ` \\| ${escapeMarkdown(clan.location.name)}` : '';
+    return `${rank}\\. ${name} \\- ${clan.clanPoints} 🏆 \\| Lvl ${clan.clanLevel}${locationInfo}`;
   }).join('\n');
+  
+  const remainingCount = rankings.items.length - 10;
+  const remainingText = remainingCount > 0 ? `\n_\\.\\.\\.and ${remainingCount} more clans_` : '';
   
   return `
 *Top Ranked Clans*
 
-${rankingsList}
-${rankings.items.length > 10 ? `\n_...and ${rankings.items.length - 10} more clans_` : ''}
+${rankingsList}${remainingText}
 `.trim();
 }
 
@@ -325,15 +335,19 @@ export function formatClanVersusRankings(rankings: ClanVersusRankingList): strin
   }
   
   const rankingsList = rankings.items.slice(0, 10).map(clan => {
-    const locationInfo = clan.location ? ` | ${escapeMarkdown(clan.location.name)}` : '';
-    return `${clan.rank}\\. ${escapeMarkdown(clan.name)} \\- ${clan.clanVersusPoints} 🏆 | Lvl ${clan.clanLevel}${locationInfo}`;
+    const name = escapeMarkdown(clan.name);
+    const rank = escapeMarkdown(clan.rank.toString());
+    const locationInfo = clan.location ? ` \\| ${escapeMarkdown(clan.location.name)}` : '';
+    return `${rank}\\. ${name} \\- ${clan.clanVersusPoints} 🏆 \\| Lvl ${clan.clanLevel}${locationInfo}`;
   }).join('\n');
+  
+  const remainingCount = rankings.items.length - 10;
+  const remainingText = remainingCount > 0 ? `\n_\\.\\.\\.and ${remainingCount} more clans_` : '';
   
   return `
 *Top Ranked Builder Base Clans*
 
-${rankingsList}
-${rankings.items.length > 10 ? `\n_...and ${rankings.items.length - 10} more clans_` : ''}
+${rankingsList}${remainingText}
 `.trim();
 }
 

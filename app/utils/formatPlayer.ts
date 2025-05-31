@@ -140,42 +140,42 @@ ${spellsList}
 }
 
 /**
- * Format player achievements for display in Telegram
+ * Format player achievements
  */
 export function formatPlayerAchievements(player: Player): string {
   if (!player.achievements || player.achievements.length === 0) {
-    return 'No achievement data available';
+    return 'No achievements data available';
   }
 
-  // Get completed achievements (3 stars)
-  const completedAchievements = player.achievements.filter(achievement => achievement.stars === 3);
-  
-  // Get in-progress achievements
-  const inProgressAchievements = player.achievements.filter(achievement => achievement.stars < 3);
-  
-  // Sort in-progress achievements by completion percentage
-  const sortedInProgress = [...inProgressAchievements].sort((a, b) => {
-    const percentA = (a.value / a.target) * 100;
-    const percentB = (b.value / b.target) * 100;
-    return percentB - percentA;
+  // Sort achievements by completion percentage (highest first)
+  const sortedAchievements = [...player.achievements].sort((a, b) => {
+    const aPercent = (a.value / a.target) * 100;
+    const bPercent = (b.value / b.target) * 100;
+    return bPercent - aPercent;
   });
-  
+
   // Get top 5 in-progress achievements
-  const topInProgress = sortedInProgress.slice(0, 5);
-  
-  const inProgressList = topInProgress.map(achievement => {
+  const inProgress = sortedAchievements
+    .filter(a => a.value < a.target)
+    .slice(0,15);
+
+  // Count completed achievements
+  const completed = player.achievements.filter(a => a.value >= a.target).length;
+  const total = player.achievements.length;
+
+  const achievementsList = inProgress.map(achievement => {
     const percent = Math.floor((achievement.value / achievement.target) * 100);
-    const stars = '⭐'.repeat(achievement.stars) + '☆'.repeat(3 - achievement.stars);
+    const stars = '⭐'.repeat(Math.floor(percent / 33.33)) + '☆'.repeat(3 - Math.floor(percent / 33.33));
     return `${stars} ${escapeMarkdown(achievement.name)}: ${achievement.value}/${achievement.target} \\(${percent}%\\)`;
   }).join('\n');
-  
+
   return `
 *Achievements for ${escapeMarkdown(player.name)}*
 
-*Top In-Progress Achievements:*
-${inProgressList}
+*Top In\\-Progress Achievements:*
+${achievementsList}
 
-*Completed: ${completedAchievements.length}/${player.achievements.length}*
+*Completed: ${completed}/${total}*
 `.trim();
 }
 
