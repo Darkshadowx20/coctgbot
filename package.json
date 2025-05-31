@@ -1,0 +1,25 @@
+{
+  "name": "coc-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for Clash",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "dist/app/bot.js",
+  "scripts": {
+    "start": "node dist/app/bot.js",
+    "dev": "tsx watch app/bot.ts",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "grammy": "^1.19.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.2"
+  }
+}
