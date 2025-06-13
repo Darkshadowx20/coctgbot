@@ -5,10 +5,13 @@
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "outDir": "./dist",
+    "rootDir": "./app",
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "declaration": true
   },
   "ts-node": {
     "esm": true,

@@ -19,6 +19,8 @@ module.exports = {
     out_file: "logs/output.log",
     log_date_format: "YYYY-MM-DD HH:mm:ss",
     merge_logs: true,
-    time: true
+    time: true,
+    interpreter: "node",
+    interpreter_args: "--experimental-specifier-resolution=node"
   }]
 } 
