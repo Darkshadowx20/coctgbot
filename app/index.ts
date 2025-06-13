@@ -2,20 +2,23 @@ import bot from './bot.js';
 import config from './config.js';
 
 // Start the bot
-async function main() {
-  console.log(`Starting Clash of Clans bot in ${config.NODE_ENV} mode...`);
-  
+async function startBot() {
   try {
-    // The bot.ts file now handles initialization and startup
-    // This file just serves as an entry point
-    await import('./bot.js');
-    
-    console.log(`Bot started successfully in ${config.NODE_ENV} mode.`);
-  } catch (error) {
-    console.error('Error starting bot:', error);
+    await bot.start({
+      onStart: (botInfo) => {
+        console.log(`Bot @${botInfo.username} is running!`);
+        console.log('Bot is ready to receive commands.');
+      },
+    });
+  } catch (err) {
+    console.error('Failed to start bot:', err);
     process.exit(1);
   }
 }
 
-// Start the application
-main().catch(console.error); 
+// Handle process termination
+process.once('SIGINT', () => bot.stop());
+process.once('SIGTERM', () => bot.stop());
+
+// Start the bot
+startBot(); 
