@@ -2,7 +2,7 @@
 module.exports = {
   apps: [{
     name: "coc",
-    script: "./dist/app/index.js",
+    script: "./dist/index.js",
     watch: false,
     env: {
       NODE_ENV: "production",
