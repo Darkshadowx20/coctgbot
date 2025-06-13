@@ -1,26 +1,42 @@
 import { Bot, session } from 'grammy';
 import { MyContext, SessionData } from './types/bot.js';
-import playerCommands from './commands/player.js';
-import clanCommands from './commands/clan.js';
-import config from './config.js';
+import commands from './commands/index.js';
+import callbacks from './callbacks/index.js';
+import config from './config/index.js';
 import logger from './middlewares/logger.js';
+import userTracker from './middlewares/userTracker.js';
+import db from './services/database.js';
+
+// Initialize database
+async function initDatabase() {
+  try {
+    await db.init();
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  }
+}
 
 // Create the bot
-const bot = new Bot<MyContext>(config.BOT_TOKEN);
+const bot = new Bot<MyContext>(config.bot.token);
 
-// Configure session
+// Configure session with memory storage (in production, use a database)
 bot.use(session({
   initial(): SessionData {
-    return {};
+    return {
+      tempData: {}
+    };
   }
 }));
 
-// Use logger middleware
+// Use middlewares
 bot.use(logger);
+bot.use(userTracker);
 
-// Register commands
-bot.use(playerCommands);
-bot.use(clanCommands);
+// Register commands and callbacks
+bot.use(commands);
+bot.use(callbacks);
 
 // Helper function to escape MarkdownV2 special characters
 function escapeMarkdown(text: string): string {
@@ -79,16 +95,31 @@ bot.catch((err) => {
 });
 
 // Start the bot
-console.log('Starting Clash of Clans bot...');
-bot.start({
-  onStart: (botInfo) => {
-    console.log(`Bot @${botInfo.username} is running!`);
-    console.log('Bot is ready to receive commands.');
-  },
-});
+async function startBot() {
+  console.log(`Starting Clash of Clans bot in ${config.bot.environment} mode...`);
+  
+  // Initialize database first
+  await initDatabase();
+  
+  // Then start the bot
+  await bot.start({
+    onStart: (botInfo) => {
+      console.log(`Bot @${botInfo.username} is running!`);
+      console.log('Bot is ready to receive commands.');
+    },
+  });
+}
 
 // Handle process termination
 process.once('SIGINT', () => bot.stop());
 process.once('SIGTERM', () => bot.stop());
+
+// Start the bot if this file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startBot().catch(err => {
+    console.error('Failed to start bot:', err);
+    process.exit(1);
+  });
+}
 
 export default bot; 

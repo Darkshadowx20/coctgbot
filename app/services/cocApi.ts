@@ -1,5 +1,5 @@
 import axios from 'axios';
-import config from '../config.js';
+import config from '../config/index.js';
 import {
   // Shared types
   Paging,
@@ -44,15 +44,14 @@ import {
   LabelList
 } from '../types/coc.js';
 
-const BASE_URL = 'https://api.clashofclans.com/v1';
-
 // Create axios instance with default headers
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: config.api.baseUrl,
   headers: {
-    'Authorization': `Bearer ${config.COC_API_KEY}`,
+    'Authorization': `Bearer ${config.api.apiKey}`,
     'Accept': 'application/json',
   },
+  timeout: config.api.timeout
 });
 
 // Helper function to encode tags
