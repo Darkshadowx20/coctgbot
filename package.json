@@ -10,7 +10,13 @@
     "start": "node dist/app/bot.js",
     "dev": "tsx watch app/bot.ts",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prod": "pnpm run build && pm2 start ecosystem.config.js",
+    "stop": "pm2 stop coc",
+    "restart": "pm2 restart coc",
+    "logs": "pm2 logs coc",
+    "status": "pm2 status",
+    "monit": "pm2 monit"
   },
   "dependencies": {
     "axios": "^1.6.2",

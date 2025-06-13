@@ -146,7 +146,7 @@ composer.command(['leaguerankings', 'leagueranks'], async (ctx) => {
     let leagueName = 'League';
     try {
       const league = await cocApi.getLeague(leagueId);
-      leagueName = league.name;
+      leagueName = league.items[0].name;
     } catch (error) {
       console.error('Error fetching league info:', error);
       // Continue with default name

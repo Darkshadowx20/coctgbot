@@ -77,3 +77,11 @@ The bot uses a simple JSON-based database to persist user data. User preferences
 - **Persistent Storage**: User data is stored in JSON files for persistence between restarts
 - **Configuration System**: Centralized configuration with environment variable support
 - **Callback Separation**: Callback query handlers are separated from command handlers 
+
+# cmd
+### pnpm run prod - Build and start the bot in production
+### pnpm run stop - Stop the bot
+### run restart - Restart the bot
+### pnpm run logs - View logs
+### pnpm run status - Check bot status
+### pnpm run monit - Monitor the bot in real-time
