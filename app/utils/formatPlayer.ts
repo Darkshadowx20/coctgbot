@@ -69,8 +69,10 @@ export function formatPlayerTroops(player: Player): string {
     return 'No troop data available';
   }
 
-  // Filter home village troops
-  const homeVillageTroops = player.troops.filter(troop => troop.village === 'home');
+  // Filter home village troops and exclude super troops
+  const homeVillageTroops = player.troops.filter(troop => 
+    troop.village === 'home' && !troop.name.startsWith('Super')
+  );
   
   // Sort troops by name
   const sortedTroops = [...homeVillageTroops].sort((a, b) => a.name.localeCompare(b.name));
