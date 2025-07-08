@@ -267,4 +267,62 @@ composer.callbackQuery(/^back_to_player_(.+)$/, async (ctx) => {
   }
 });
 
+// Add handler for Builder Base menu
+composer.callbackQuery(/^builder_base_(.+)$/, async (ctx) => {
+  const playerTag = ctx.match[1];
+    
+  try {
+    const player = await cocApi.getPlayer(playerTag);
+    
+    // Show the builder base menu with options
+    await ctx.editMessageText(`*Builder Base Options for ${escapeMarkdown(player.name)}*\n\nSelect an option to view Builder Base details:`, {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createBuilderBaseKeyboard(playerTag)
+    });
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching builder base info');
+    console.error('Error fetching builder base info:', error);
+  }
+});
+
+// Add handler for Builder Base troops
+composer.callbackQuery(/^builder_troops_(.+)$/, async (ctx) => {
+  const playerTag = ctx.match[1];
+    
+  try {
+    const player = await cocApi.getPlayer(playerTag);
+    
+    await ctx.editMessageText(playerUtils.formatPlayerBuilderTroops(player), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createBuilderBaseKeyboard(playerTag)
+    });
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching builder base troops');
+    console.error('Error fetching builder base troops:', error);
+  }
+});
+
+// Add handler for Builder Base heroes
+composer.callbackQuery(/^builder_heroes_(.+)$/, async (ctx) => {
+  const playerTag = ctx.match[1];
+    
+  try {
+    const player = await cocApi.getPlayer(playerTag);
+    
+    await ctx.editMessageText(playerUtils.formatPlayerBuilderHeroes(player), {
+      parse_mode: 'MarkdownV2',
+      reply_markup: playerUtils.createBuilderBaseKeyboard(playerTag)
+    });
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching builder base heroes');
+    console.error('Error fetching builder base heroes:', error);
+  }
+});
+
 export default composer; 

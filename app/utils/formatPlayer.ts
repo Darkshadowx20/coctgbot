@@ -20,11 +20,28 @@ export function formatPlayerInfo(player: Player): string {
     ? `\n🏆 League: ${escapeMarkdown(player.league.name)}` 
     : '\n🏆 League: None';
 
-  const builderBaseInfo = player.builderHallLevel 
-    ? `\n\n*Builder Base*\n🏠 Builder Hall: ${player.builderHallLevel}\n🏆 Versus Trophies: ${player.versusTrophies}\n🏅 Best Versus Trophies: ${player.bestVersusTrophies}\n⚔️ Versus Battle Wins: ${player.versusBattleWins}`
-    : '';
+  // Improved Builder Base section with proper handling of undefined values
+  let builderBaseInfo = '';
+  if (player.builderHallLevel) {
+    builderBaseInfo = '\n\n*Builder Base*';
+    builderBaseInfo += `\n🏠 Builder Hall: ${player.builderHallLevel}`;
+    
+    // Only show stats that are available
+    if (typeof player.versusTrophies === 'number') {
+      builderBaseInfo += `\n🏆 Versus Trophies: ${player.versusTrophies}`;
+    }
+    
+    if (typeof player.bestVersusTrophies === 'number') {
+      builderBaseInfo += `\n🏅 Best Versus Trophies: ${player.bestVersusTrophies}`;
+    }
+    
+    if (typeof player.versusBattleWins === 'number') {
+      builderBaseInfo += `\n⚔️ Versus Battle Wins: ${player.versusBattleWins}`;
+    }
+  }
 
-  return `
+  // Main village info with better spacing
+  const mainVillageInfo = `
 *${escapeMarkdown(player.name)}* \\(${escapeMarkdown(player.tag)}\\)
 ${clanInfo}
 ${leagueInfo}
@@ -37,9 +54,9 @@ ${leagueInfo}
 🛡️ Defense Wins: ${player.defenseWins}
 ${player.role ? `\n👤 Role: ${escapeMarkdown(player.role)}` : ''}
 ${player.donations !== undefined ? `\n📦 Donations: ${player.donations}` : ''}
-${player.donationsReceived !== undefined ? `\n📥 Donations Received: ${player.donationsReceived}` : ''}
-${builderBaseInfo}
-`.trim();
+${player.donationsReceived !== undefined ? `\n📥 Donations Received: ${player.donationsReceived}` : ''}`;
+
+  return (mainVillageInfo + builderBaseInfo).trim();
 }
 
 /**
@@ -47,11 +64,13 @@ ${builderBaseInfo}
  */
 export function createPlayerKeyboard(playerTag: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text("Troops", `troops_${playerTag}`)
-    .text("Heroes", `heroes_${playerTag}`)
+    .text("🪖 Troops", `troops_${playerTag}`)
+    .text("👑 Heroes", `heroes_${playerTag}`)
     .row()
-    .text("Spells", `spells_${playerTag}`)
-    .text("Achievements", `achievements_${playerTag}`);
+    .text("🧪 Spells", `spells_${playerTag}`)
+    .text("🏆 Achievements", `achievements_${playerTag}`)
+    .row()
+    .text("🏠 Builder Base", `builder_base_${playerTag}`);
 }
 
 /**
@@ -67,13 +86,13 @@ export function createBackToPlayerKeyboard(playerTag: string): InlineKeyboard {
  */
 export function createTroopTypesKeyboard(playerTag: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text("Elixir Troops", `elixir_troops_${playerTag}`)
-    .text("Dark Troops", `dark_troops_${playerTag}`)
+    .text("💧 Elixir Troops", `elixir_troops_${playerTag}`)
+    .text("🖤 Dark Troops", `dark_troops_${playerTag}`)
     .row()
-    .text("Hero Pets", `hero_pets_${playerTag}`)
-    .text("Siege Machines", `siege_machines_${playerTag}`)
+    .text("🐾 Hero Pets", `hero_pets_${playerTag}`)
+    .text("🛠️ Siege Machines", `siege_machines_${playerTag}`)
     .row()
-    .text("All Troops", `all_troops_${playerTag}`)
+    .text("🪖 All Troops", `all_troops_${playerTag}`)
     .text("« Back", `back_to_player_${playerTag}`);
 }
 
@@ -639,10 +658,10 @@ ${machinesList}
  */
 export function createSpellTypesKeyboard(playerTag: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text("Elixir Spells", `elixir_spells_${playerTag}`)
-    .text("Dark Spells", `dark_spells_${playerTag}`)
+    .text("🔮 Elixir Spells", `elixir_spells_${playerTag}`)
+    .text("🧿 Dark Spells", `dark_spells_${playerTag}`)
     .row()
-    .text("All Spells", `all_spells_${playerTag}`)
+    .text("🧪 All Spells", `all_spells_${playerTag}`)
     .text("« Back", `back_to_player_${playerTag}`);
 }
 
@@ -741,6 +760,105 @@ ${spellsList}
 `.trim();
 }
 
+/**
+ * Create inline keyboard for builder base options
+ */
+export function createBuilderBaseKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🪖 BB Troops", `builder_troops_${playerTag}`)
+    .text("👑 BB Heroes", `builder_heroes_${playerTag}`)
+    .row()
+    .text("« Back", `back_to_player_${playerTag}`);
+}
+
+/**
+ * Format player builder base troops
+ */
+export function formatPlayerBuilderTroops(player: Player): string {
+  if (!player.troops || player.troops.length === 0) {
+    return 'No builder base troop data available';
+  }
+
+  // Filter builder base troops
+  const builderTroops = player.troops.filter(troop => troop.village === 'builderBase');
+  
+  if (builderTroops.length === 0) {
+    return 'No builder base troop data available';
+  }
+  
+  // Map troop names to emojis
+  const troopEmojis: {[key: string]: string} = {
+    'Raged Barbarian': '⚔️',
+    'Sneaky Archer': '🏹',
+    'Boxer Giant': '💪',
+    'Beta Minion': '🦇',
+    'Bomber': '💣',
+    'Baby Dragon': '🐲',
+    'Cannon Cart': '🛒',
+    'Night Witch': '🧙‍♀️',
+    'Drop Ship': '🚢',
+    'Super P.E.K.K.A': '🤖',
+    'Hog Glider': '🐗',
+    'Electrofire Wizard': '⚡',
+    'Mighty Yak': '🐃',
+    'Flame Flinger': '🔥',
+    'Rocket Balloon': '🚀',
+    'Power P.E.K.K.A': '💥'
+  };
+  
+  // Sort troops by name
+  const sortedTroops = [...builderTroops].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const troopsList = sortedTroops.map(troop => {
+    const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
+    const emoji = troopEmojis[troop.name] || '🪖'; // Default emoji
+    return `${emoji} ${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Builder Base Troops for ${escapeMarkdown(player.name)}*
+
+${troopsList}
+`.trim();
+}
+
+/**
+ * Format player builder base heroes
+ */
+export function formatPlayerBuilderHeroes(player: Player): string {
+  if (!player.heroes || player.heroes.length === 0) {
+    return 'No builder base hero data available';
+  }
+
+  // Filter builder base heroes
+  const builderHeroes = player.heroes.filter(hero => hero.village === 'builderBase');
+  
+  if (builderHeroes.length === 0) {
+    return 'No builder base hero data available';
+  }
+  
+  // Map hero names to emojis
+  const heroEmojis: {[key: string]: string} = {
+    'Battle Machine': '🤖',
+    'Battle Copter': '🚁'
+  };
+  
+  // Sort heroes by name
+  const sortedHeroes = [...builderHeroes].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const heroesList = sortedHeroes.map(hero => {
+    const maxLevelIndicator = hero.level === hero.maxLevel ? ' ✅' : '';
+    const emoji = heroEmojis[hero.name] || '👑'; // Default emoji
+    return `${emoji} ${escapeMarkdown(hero.name)}: ${hero.level}/${hero.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Builder Base Heroes for ${escapeMarkdown(player.name)}*
+
+${heroesList}
+`.trim();
+}
+
 export default {
   formatPlayerInfo,
   formatPlayerTroops,
@@ -760,4 +878,7 @@ export default {
   createSpellTypesKeyboard,
   formatPlayerElixirSpells,
   formatPlayerDarkSpells,
+  createBuilderBaseKeyboard,
+  formatPlayerBuilderTroops,
+  formatPlayerBuilderHeroes,
 }; 
