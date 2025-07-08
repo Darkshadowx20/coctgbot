@@ -63,6 +63,21 @@ export function createBackToPlayerKeyboard(playerTag: string): InlineKeyboard {
 }
 
 /**
+ * Create inline keyboard for troop types
+ */
+export function createTroopTypesKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("Elixir Troops", `elixir_troops_${playerTag}`)
+    .text("Dark Troops", `dark_troops_${playerTag}`)
+    .row()
+    .text("Hero Pets", `hero_pets_${playerTag}`)
+    .text("Siege Machines", `siege_machines_${playerTag}`)
+    .row()
+    .text("All Troops", `all_troops_${playerTag}`)
+    .text("« Back", `back_to_player_${playerTag}`);
+}
+
+/**
  * Format player troops for display in Telegram
  */
 export function formatPlayerTroops(player: Player): string {
@@ -140,9 +155,19 @@ export function formatPlayerHeroes(player: Player): string {
   // Sort heroes by name
   const sortedHeroes = [...homeVillageHeroes].sort((a, b) => a.name.localeCompare(b.name));
   
+  // Map hero names to emojis
+  const heroEmojis: {[key: string]: string} = {
+    'Barbarian King': '👑',
+    'Archer Queen': '🏹',
+    'Grand Warden': '📚',
+    'Royal Champion': '🛡️',
+    'Minion Prince': '🦇',
+  };
+  
   const heroesList = sortedHeroes.map(hero => {
     const maxLevelIndicator = hero.level === hero.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(hero.name)}: ${hero.level}/${hero.maxLevel}${maxLevelIndicator}`;
+    const emoji = heroEmojis[hero.name] || '⚔️'; // Default emoji if hero name not found
+    return `${emoji} ${escapeMarkdown(hero.name)}: ${hero.level}/${hero.maxLevel}${maxLevelIndicator}`;
   }).join('\n');
   
   return `
@@ -163,18 +188,39 @@ export function formatPlayerSpells(player: Player): string {
   // Filter home village spells
   const homeVillageSpells = player.spells.filter(spell => spell.village === 'home');
   
-  // Sort spells by name
-  const sortedSpells = [...homeVillageSpells].sort((a, b) => a.name.localeCompare(b.name));
+  // Separate elixir and dark spells
+  const elixirSpells = homeVillageSpells.filter(spell => 
+    ['Lightning Spell', 'Healing Spell', 'Rage Spell', 'Jump Spell', 
+    'Freeze Spell', 'Clone Spell', 'Invisibility Spell', 
+    'Recall Spell', 'Revive Spell'].includes(spell.name)
+  );
   
-  const spellsList = sortedSpells.map(spell => {
-    const maxLevelIndicator = spell.level === spell.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
-  }).join('\n');
+  const darkSpells = homeVillageSpells.filter(spell => 
+    ['Poison Spell', 'Earthquake Spell', 'Haste Spell', 'Skeleton Spell', 
+    'Bat Spell', 'Overgrowth Spell', 'Ice Block Spell'].includes(spell.name)
+  );
+  
+  // Format each section
+  const formatSpells = (spells: any[]) => {
+    if (spells.length === 0) return '';
+    const sortedSpells = [...spells].sort((a, b) => a.name.localeCompare(b.name));
+    return sortedSpells.map(spell => {
+      const maxLevelIndicator = spell.level === spell.maxLevel ? ' ✅' : '';
+      return `${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
+    }).join('\n');
+  };
+  
+  const elixirSpellsList = formatSpells(elixirSpells);
+  const darkSpellsList = formatSpells(darkSpells);
   
   return `
 *Spells for ${escapeMarkdown(player.name)}*
 
-${spellsList}
+*Elixir Spells:*
+${elixirSpellsList || 'No elixir spells available'}
+
+*Dark Spells:*
+${darkSpellsList || 'No dark spells available'}
 `.trim();
 }
 
@@ -281,6 +327,243 @@ ${rankings.items.length > 10 ? `\n_...and ${rankings.items.length - 10} more pla
 `.trim();
 }
 
+/**
+ * Format player elixir troops for display in Telegram
+ */
+export function formatPlayerElixirTroops(player: Player): string {
+  if (!player.troops || player.troops.length === 0) {
+    return 'No elixir troop data available';
+  }
+
+  // Filter home village troops (exclude super troops)
+  const homeVillageTroops = player.troops.filter(troop => 
+    troop.village === 'home' && !troop.name.startsWith('Super')
+  );
+  
+  // Filter elixir troops
+  const elixirTroops = homeVillageTroops.filter(troop => 
+    ['Barbarian', 'Archer', 'Giant', 'Goblin', 'Wall Breaker', 
+    'Balloon', 'Wizard', 'Healer', 'Dragon', 'P.E.K.K.A', 'Baby Dragon', 
+    'Miner', 'Electro Dragon', 'Yeti', 'Dragon Rider', 'Electro Titan',
+    'Root Rider', 'Thrower'].includes(troop.name)
+  );
+  
+  if (elixirTroops.length === 0) {
+    return 'No elixir troop data available';
+  }
+  
+  // Sort troops by name
+  const sortedTroops = [...elixirTroops].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const troopsList = sortedTroops.map(troop => {
+    const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Elixir Troops for ${escapeMarkdown(player.name)}*
+
+${troopsList}
+`.trim();
+}
+
+/**
+ * Format player dark elixir troops for display in Telegram
+ */
+export function formatPlayerDarkTroops(player: Player): string {
+  if (!player.troops || player.troops.length === 0) {
+    return 'No dark elixir troop data available';
+  }
+
+  // Filter home village troops (exclude super troops)
+  const homeVillageTroops = player.troops.filter(troop => 
+    troop.village === 'home' && !troop.name.startsWith('Super')
+  );
+  
+  // Filter dark elixir troops
+  const darkElixirTroops = homeVillageTroops.filter(troop => 
+    ['Minion', 'Hog Rider', 'Valkyrie', 'Golem', 'Witch', 'Lava Hound', 
+    'Bowler', 'Ice Golem', 'Headhunter', 'Apprentice Warden', 'Druid', 
+    'Furnace'].includes(troop.name)
+  );
+  
+  if (darkElixirTroops.length === 0) {
+    return 'No dark elixir troop data available';
+  }
+  
+  // Sort troops by name
+  const sortedTroops = [...darkElixirTroops].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const troopsList = sortedTroops.map(troop => {
+    const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Dark Elixir Troops for ${escapeMarkdown(player.name)}*
+
+${troopsList}
+`.trim();
+}
+
+/**
+ * Format player hero pets for display in Telegram
+ */
+export function formatPlayerHeroPets(player: Player): string {
+  if (!player.troops || player.troops.length === 0) {
+    return 'No hero pet data available';
+  }
+
+  // Filter home village troops
+  const homeVillageTroops = player.troops.filter(troop => 
+    troop.village === 'home'
+  );
+  
+  // Filter hero pets
+  const heroPets = homeVillageTroops.filter(troop => 
+    ['L.A.S.S.I', 'Electro Owl', 'Mighty Yak', 'Unicorn', 
+    'Frosty', 'Diggy', 'Poison Lizard', 'Phoenix', 
+    'Spirit Fox', 'Angry Jelly', 'Sneezy'].includes(troop.name)
+  );
+  
+  if (heroPets.length === 0) {
+    return 'No hero pet data available';
+  }
+  
+  // Sort pets by name
+  const sortedPets = [...heroPets].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const petsList = sortedPets.map(pet => {
+    const maxLevelIndicator = pet.level === pet.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(pet.name)}: ${pet.level}/${pet.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Hero Pets for ${escapeMarkdown(player.name)}*
+
+${petsList}
+`.trim();
+}
+
+/**
+ * Format player siege machines for display in Telegram
+ */
+export function formatPlayerSiegeMachines(player: Player): string {
+  if (!player.troops || player.troops.length === 0) {
+    return 'No siege machine data available';
+  }
+
+  // Filter home village troops
+  const homeVillageTroops = player.troops.filter(troop => 
+    troop.village === 'home'
+  );
+  
+  // Filter siege machines
+  const siegeMachines = homeVillageTroops.filter(troop => 
+    ['Wall Wrecker', 'Battle Blimp', 'Stone Slammer', 'Siege Barracks',
+    'Log Launcher', 'Flame Flinger', 'Battle Drill', 'Troop Launcher'].includes(troop.name)
+  );
+  
+  if (siegeMachines.length === 0) {
+    return 'No siege machine data available';
+  }
+  
+  // Sort siege machines by name
+  const sortedMachines = [...siegeMachines].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const machinesList = sortedMachines.map(machine => {
+    const maxLevelIndicator = machine.level === machine.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(machine.name)}: ${machine.level}/${machine.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Siege Machines for ${escapeMarkdown(player.name)}*
+
+${machinesList}
+`.trim();
+}
+
+/**
+ * Create inline keyboard for spell types
+ */
+export function createSpellTypesKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("Elixir Spells", `elixir_spells_${playerTag}`)
+    .text("Dark Spells", `dark_spells_${playerTag}`)
+    .row()
+    .text("All Spells", `all_spells_${playerTag}`)
+    .text("« Back", `back_to_player_${playerTag}`);
+}
+
+/**
+ * Format player elixir spells for display in Telegram
+ */
+export function formatPlayerElixirSpells(player: Player): string {
+  if (!player.spells || player.spells.length === 0) {
+    return 'No elixir spell data available';
+  }
+
+  // Filter home village elixir spells
+  const elixirSpells = player.spells.filter(spell => 
+    spell.village === 'home' && 
+    ['Lightning Spell', 'Healing Spell', 'Rage Spell', 'Jump Spell', 
+    'Freeze Spell', 'Clone Spell', 'Invisibility Spell', 
+    'Recall Spell', 'Revive Spell'].includes(spell.name)
+  );
+  
+  if (elixirSpells.length === 0) {
+    return 'No elixir spell data available';
+  }
+  
+  // Sort spells by name
+  const sortedSpells = [...elixirSpells].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const spellsList = sortedSpells.map(spell => {
+    const maxLevelIndicator = spell.level === spell.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Elixir Spells for ${escapeMarkdown(player.name)}*
+
+${spellsList}
+`.trim();
+}
+
+/**
+ * Format player dark spells for display in Telegram
+ */
+export function formatPlayerDarkSpells(player: Player): string {
+  if (!player.spells || player.spells.length === 0) {
+    return 'No dark spell data available';
+  }
+
+  // Filter home village dark spells
+  const darkSpells = player.spells.filter(spell => 
+    spell.village === 'home' && 
+    ['Poison Spell', 'Earthquake Spell', 'Haste Spell', 'Skeleton Spell', 
+    'Bat Spell', 'Overgrowth Spell', 'Ice Block Spell'].includes(spell.name)
+  );
+  
+  if (darkSpells.length === 0) {
+    return 'No dark spell data available';
+  }
+  
+  // Sort spells by name
+  const sortedSpells = [...darkSpells].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const spellsList = sortedSpells.map(spell => {
+    const maxLevelIndicator = spell.level === spell.maxLevel ? ' ✅' : '';
+    return `${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+  
+  return `
+*Dark Spells for ${escapeMarkdown(player.name)}*
+
+${spellsList}
+`.trim();
+}
+
 export default {
   formatPlayerInfo,
   formatPlayerTroops,
@@ -292,4 +575,12 @@ export default {
   formatLeagueSeasonRankings,
   createPlayerKeyboard,
   createBackToPlayerKeyboard,
+  createTroopTypesKeyboard,
+  formatPlayerElixirTroops,
+  formatPlayerDarkTroops,
+  formatPlayerHeroPets,
+  formatPlayerSiegeMachines,
+  createSpellTypesKeyboard,
+  formatPlayerElixirSpells,
+  formatPlayerDarkSpells,
 }; 
