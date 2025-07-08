@@ -3,7 +3,8 @@ import {
   PlayerRankingList, 
   PlayerVersusBattleRankingList,
   LeagueRankingList,
-  Troop
+  Troop,
+  GoldPassSeason
 } from '../types/coc.js';
 import { InlineKeyboard } from 'grammy';
 import { escapeMarkdown } from './formatClan.js';
@@ -12,55 +13,115 @@ import { escapeMarkdown } from './formatClan.js';
  * Format player data for display in Telegram
  */
 export function formatPlayerInfo(player: Player): string {
+  // Clan section with better formatting
   const clanInfo = player.clan 
-    ? `\n🛡️ Clan: ${escapeMarkdown(player.clan.name)} \\(${escapeMarkdown(player.clan.tag)}\\)`
-    : '\n🛡️ Clan: None';
+    ? `\n🛡️ *Clan:* ${escapeMarkdown(player.clan.name)} \\(${escapeMarkdown(player.clan.tag)}\\)`
+    : '\n🛡️ *Clan:* None';
   
+  // League section with better formatting
   const leagueInfo = player.league 
-    ? `\n🏆 League: ${escapeMarkdown(player.league.name)}` 
-    : '\n🏆 League: None';
+    ? `\n🏆 *League:* ${escapeMarkdown(player.league.name)}` 
+    : '\n🏆 *League:* None';
 
-  // Improved Builder Base section with proper handling of undefined values
+  // Main village stats with better formatting and organization
+  const mainVillageStats = `
+👑 *Experience Level:* ${player.expLevel}
+🏠 *Town Hall:* ${player.townHallLevel}
+🏆 *Trophies:* ${player.trophies}
+🏅 *Best Trophies:* ${player.bestTrophies}
+⭐ *War Stars:* ${player.warStars}
+⚔️ *Attack Wins:* ${player.attackWins}
+🛡️ *Defense Wins:* ${player.defenseWins}`;
+
+  // Role and donations with better formatting
+  const roleAndDonations = `${player.role ? `\n👤 *Role:* ${escapeMarkdown(player.role)}` : ''}${player.donations !== undefined ? `\n📦 *Donations:* ${player.donations}` : ''}${player.donationsReceived !== undefined ? `\n📥 *Donations Received:* ${player.donationsReceived}` : ''}`;
+
+  // Improved Builder Base section with proper undefined checks and better formatting
   let builderBaseInfo = '';
   if (player.builderHallLevel) {
-    builderBaseInfo = '\n\n*Builder Base*';
-    builderBaseInfo += `\n🏠 Builder Hall: ${player.builderHallLevel}`;
+    builderBaseInfo = '\n\n*📊 Builder Base*';
+    builderBaseInfo += `\n🏠 *Builder Hall:* ${player.builderHallLevel}`;
     
     // Only show stats that are available
     if (typeof player.versusTrophies === 'number') {
-      builderBaseInfo += `\n🏆 Versus Trophies: ${player.versusTrophies}`;
+      builderBaseInfo += `\n🏆 *Versus Trophies:* ${player.versusTrophies}`;
     }
     
     if (typeof player.bestVersusTrophies === 'number') {
-      builderBaseInfo += `\n🏅 Best Versus Trophies: ${player.bestVersusTrophies}`;
+      builderBaseInfo += `\n🏅 *Best Versus Trophies:* ${player.bestVersusTrophies}`;
     }
     
     if (typeof player.versusBattleWins === 'number') {
-      builderBaseInfo += `\n⚔️ Versus Battle Wins: ${player.versusBattleWins}`;
+      builderBaseInfo += `\n⚔️ *Versus Battle Wins:* ${player.versusBattleWins}`;
     }
   }
 
-  // Main village info with better spacing
-  const mainVillageInfo = `
+  // Combine all sections with proper spacing
+  return `
 *${escapeMarkdown(player.name)}* \\(${escapeMarkdown(player.tag)}\\)
 ${clanInfo}
 ${leagueInfo}
-👑 Experience Level: ${player.expLevel}
-🏠 Town Hall: ${player.townHallLevel}
-🏆 Trophies: ${player.trophies}
-🏅 Best Trophies: ${player.bestTrophies}
-⭐ War Stars: ${player.warStars}
-⚔️ Attack Wins: ${player.attackWins}
-🛡️ Defense Wins: ${player.defenseWins}
-${player.role ? `\n👤 Role: ${escapeMarkdown(player.role)}` : ''}
-${player.donations !== undefined ? `\n📦 Donations: ${player.donations}` : ''}
-${player.donationsReceived !== undefined ? `\n📥 Donations Received: ${player.donationsReceived}` : ''}`;
-
-  return (mainVillageInfo + builderBaseInfo).trim();
+${mainVillageStats}
+${roleAndDonations}
+${builderBaseInfo}
+`.trim();
 }
 
 /**
- * Create inline keyboard for player details
+ * Format Gold Pass status for display
+ */
+export function formatGoldPassStatus(goldPass: GoldPassSeason): string {
+  const now = new Date();
+  
+  // Parse dates safely with fallback
+  let startTime: Date;
+  let endTime: Date;
+  
+  try {
+    // Try ISO format first
+    startTime = new Date(goldPass.startTime);
+    endTime = new Date(goldPass.endTime);
+    
+    // Check if dates are valid
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      throw new Error('Invalid date format');
+    }
+  } catch (error) {
+    // Fallback to current month/next month if parsing fails
+    console.error('Error parsing Gold Pass dates:', error);
+    startTime = new Date();
+    startTime.setDate(1); // First day of current month
+    
+    endTime = new Date();
+    endTime.setMonth(endTime.getMonth() + 1); // Next month
+    endTime.setDate(0); // Last day of current month
+  }
+  
+  // Calculate days remaining
+  const daysRemaining = Math.ceil((endTime.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Format dates in a readable way
+  const formatDate = (date: Date): string => {
+    return `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+  };
+  
+  // Check if Gold Pass is active
+  const isActive = now >= startTime && now <= endTime;
+  const statusEmoji = isActive ? '✅' : '❌';
+  const statusText = isActive ? 'Active' : 'Inactive';
+  
+  return `
+*🏅 Gold Pass Status*
+
+*Status:* ${statusEmoji} ${statusText}
+*Season Start:* ${formatDate(startTime)}
+*Season End:* ${formatDate(endTime)}
+${isActive ? `*Days Remaining:* ${daysRemaining}` : '*Next Season:* Coming soon'}
+`.trim();
+}
+
+/**
+ * Create inline keyboard for player details with Gold Pass button
  */
 export function createPlayerKeyboard(playerTag: string): InlineKeyboard {
   return new InlineKeyboard()
@@ -70,7 +131,8 @@ export function createPlayerKeyboard(playerTag: string): InlineKeyboard {
     .text("🧪 Spells", `spells_${playerTag}`)
     .text("🏆 Achievements", `achievements_${playerTag}`)
     .row()
-    .text("🏠 Builder Base", `builder_base_${playerTag}`);
+    .text("🏠 Builder Base", `builder_base_${playerTag}`)
+    .text("🏅 Gold Pass", `gold_pass_${playerTag}`);
 }
 
 /**
@@ -881,4 +943,5 @@ export default {
   createBuilderBaseKeyboard,
   formatPlayerBuilderTroops,
   formatPlayerBuilderHeroes,
+  formatGoldPassStatus,
 }; 

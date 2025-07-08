@@ -325,4 +325,38 @@ composer.callbackQuery(/^builder_heroes_(.+)$/, async (ctx) => {
   }
 });
 
+// Add handler for Gold Pass status
+composer.callbackQuery(/^gold_pass_(.+)$/, async (ctx) => {
+  const playerTag = ctx.match[1];
+    
+  try {
+    const player = await cocApi.getPlayer(playerTag);
+    
+    try {
+      const goldPass = await cocApi.getCurrentGoldPassSeason();
+      
+      // Debug log to see the raw data format
+      console.log('Gold Pass data:', JSON.stringify(goldPass));
+      
+      await ctx.editMessageText(`*Gold Pass for ${escapeMarkdown(player.name)}*\n\n${playerUtils.formatGoldPassStatus(goldPass)}`, {
+        parse_mode: 'MarkdownV2',
+        reply_markup: playerUtils.createBackToPlayerKeyboard(playerTag)
+      });
+    } catch (goldPassError) {
+      console.error('Error fetching Gold Pass information:', goldPassError);
+      
+      // Fallback message if Gold Pass info can't be retrieved
+      await ctx.editMessageText(`*Gold Pass for ${escapeMarkdown(player.name)}*\n\n❌ *Gold Pass information is currently unavailable\\.*\n\nPlease check the Clash of Clans game for accurate Gold Pass details.`, {
+        parse_mode: 'MarkdownV2',
+        reply_markup: playerUtils.createBackToPlayerKeyboard(playerTag)
+      });
+    }
+    
+    await ctx.answerCallbackQuery();
+  } catch (error) {
+    await ctx.answerCallbackQuery('Error fetching player information');
+    console.error('Error fetching player information:', error);
+  }
+});
+
 export default composer; 
