@@ -116,6 +116,66 @@ export function formatPlayerTroops(player: Player): string {
     'Furnace'].includes(troop.name)
   );
   
+  // Map troop names to emojis
+  const troopEmojis: {[key: string]: string} = {
+    // Elixir troops
+    'Barbarian': '⚔️',
+    'Archer': '🏹',
+    'Giant': '💪',
+    'Goblin': '💰',
+    'Wall Breaker': '💣',
+    'Balloon': '🎈',
+    'Wizard': '🧙',
+    'Healer': '💗',
+    'Dragon': '🐉',
+    'P.E.K.K.A': '🤖',
+    'Baby Dragon': '🐲',
+    'Miner': '⛏️',
+    'Electro Dragon': '⚡',
+    'Yeti': '❄️',
+    'Dragon Rider': '🐉',
+    'Electro Titan': '⚡',
+    'Root Rider': '🌱',
+    'Thrower': '🔥',
+    
+    // Dark troops
+    'Minion': '🦇',
+    'Hog Rider': '🐗',
+    'Valkyrie': '🔴',
+    'Golem': '🪨',
+    'Witch': '🧙‍♀️',
+    'Lava Hound': '🌋',
+    'Bowler': '🎳',
+    'Ice Golem': '☃️',
+    'Headhunter': '🏹',
+    'Apprentice Warden': '📚',
+    'Druid': '🌿',
+    'Furnace': '🔥',
+    
+    // Hero pets
+    'L.A.S.S.I': '🐕',
+    'Electro Owl': '🦉',
+    'Mighty Yak': '🐃',
+    'Unicorn': '🦄',
+    'Frosty': '❄️',
+    'Diggy': '🦔',
+    'Poison Lizard': '🦎',
+    'Phoenix': '🔥',
+    'Spirit Fox': '🦊',
+    'Angry Jelly': '🫠',
+    'Sneezy': '🤧',
+    
+    // Siege machines
+    'Wall Wrecker': '🚚',
+    'Battle Blimp': '🎈',
+    'Stone Slammer': '🪨',
+    'Siege Barracks': '🏛️',
+    'Log Launcher': '🪵',
+    'Flame Flinger': '🔥',
+    'Battle Drill': '⚙️',
+    'Troop Launcher': '🚀'
+  };
+  
   // Format sections
   const formatSection = (troops: Troop[], title: string): string => {
     if (troops.length === 0) return '';
@@ -123,7 +183,8 @@ export function formatPlayerTroops(player: Player): string {
     const sortedTroops = [...troops].sort((a, b) => a.name.localeCompare(b.name));
     const troopsList = sortedTroops.map(troop => {
       const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
-      return `${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
+      const emoji = troopEmojis[troop.name] || '🪖'; // Default emoji
+      return `${emoji} ${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
     }).join('\n');
     
     return `*${title}*\n${troopsList}\n\n`;
@@ -200,18 +261,39 @@ export function formatPlayerSpells(player: Player): string {
     'Bat Spell', 'Overgrowth Spell', 'Ice Block Spell'].includes(spell.name)
   );
   
+  // Map spell names to emojis
+  const spellEmojis: {[key: string]: string} = {
+    'Lightning Spell': '⚡',
+    'Healing Spell': '❤️',
+    'Rage Spell': '😡',
+    'Jump Spell': '🦘',
+    'Freeze Spell': '❄️',
+    'Clone Spell': '👥',
+    'Invisibility Spell': '👻',
+    'Recall Spell': '↩️',
+    'Revive Spell': '💫',
+    'Poison Spell': '☠️',
+    'Earthquake Spell': '🌋',
+    'Haste Spell': '💨',
+    'Skeleton Spell': '💀',
+    'Bat Spell': '🦇',
+    'Overgrowth Spell': '🌿',
+    'Ice Block Spell': '🧊'
+  };
+  
   // Format each section
-  const formatSpells = (spells: any[]) => {
+  const formatSpellsWithEmoji = (spells: any[]) => {
     if (spells.length === 0) return '';
     const sortedSpells = [...spells].sort((a, b) => a.name.localeCompare(b.name));
     return sortedSpells.map(spell => {
       const maxLevelIndicator = spell.level === spell.maxLevel ? ' ✅' : '';
-      return `${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
+      const emoji = spellEmojis[spell.name] || '🧪'; // Default emoji
+      return `${emoji} ${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
     }).join('\n');
   };
   
-  const elixirSpellsList = formatSpells(elixirSpells);
-  const darkSpellsList = formatSpells(darkSpells);
+  const elixirSpellsList = formatSpellsWithEmoji(elixirSpells);
+  const darkSpellsList = formatSpellsWithEmoji(darkSpells);
   
   return `
 *Spells for ${escapeMarkdown(player.name)}*
@@ -352,12 +434,35 @@ export function formatPlayerElixirTroops(player: Player): string {
     return 'No elixir troop data available';
   }
   
+  // Map troop names to emojis
+  const troopEmojis: {[key: string]: string} = {
+    'Barbarian': '⚔️',
+    'Archer': '🏹',
+    'Giant': '💪',
+    'Goblin': '💰',
+    'Wall Breaker': '💣',
+    'Balloon': '🎈',
+    'Wizard': '🧙',
+    'Healer': '💗',
+    'Dragon': '🐉',
+    'P.E.K.K.A': '🤖',
+    'Baby Dragon': '🐲',
+    'Miner': '⛏️',
+    'Electro Dragon': '⚡',
+    'Yeti': '❄️',
+    'Dragon Rider': '🐉',
+    'Electro Titan': '⚡',
+    'Root Rider': '🌱',
+    'Thrower': '🔥'
+  };
+  
   // Sort troops by name
   const sortedTroops = [...elixirTroops].sort((a, b) => a.name.localeCompare(b.name));
   
   const troopsList = sortedTroops.map(troop => {
     const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
+    const emoji = troopEmojis[troop.name] || '🪖'; // Default emoji
+    return `${emoji} ${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
   }).join('\n');
   
   return `
@@ -391,12 +496,29 @@ export function formatPlayerDarkTroops(player: Player): string {
     return 'No dark elixir troop data available';
   }
   
+  // Map troop names to emojis
+  const darkTroopEmojis: {[key: string]: string} = {
+    'Minion': '🦇',
+    'Hog Rider': '🐗',
+    'Valkyrie': '🔴',
+    'Golem': '🪨',
+    'Witch': '🧙‍♀️',
+    'Lava Hound': '🌋',
+    'Bowler': '🎳',
+    'Ice Golem': '☃️',
+    'Headhunter': '🏹',
+    'Apprentice Warden': '📚',
+    'Druid': '🌿',
+    'Furnace': '🔥'
+  };
+  
   // Sort troops by name
   const sortedTroops = [...darkElixirTroops].sort((a, b) => a.name.localeCompare(b.name));
   
   const troopsList = sortedTroops.map(troop => {
     const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
+    const emoji = darkTroopEmojis[troop.name] || '🖤'; // Default emoji
+    return `${emoji} ${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
   }).join('\n');
   
   return `
@@ -430,12 +552,28 @@ export function formatPlayerHeroPets(player: Player): string {
     return 'No hero pet data available';
   }
   
+  // Map pet names to emojis
+  const petEmojis: {[key: string]: string} = {
+    'L.A.S.S.I': '🐕',
+    'Electro Owl': '🦉',
+    'Mighty Yak': '🐃',
+    'Unicorn': '🦄',
+    'Frosty': '❄️',
+    'Diggy': '🦔',
+    'Poison Lizard': '🦎',
+    'Phoenix': '🔥',
+    'Spirit Fox': '🦊',
+    'Angry Jelly': '🫠',
+    'Sneezy': '🤧'
+  };
+  
   // Sort pets by name
   const sortedPets = [...heroPets].sort((a, b) => a.name.localeCompare(b.name));
   
   const petsList = sortedPets.map(pet => {
     const maxLevelIndicator = pet.level === pet.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(pet.name)}: ${pet.level}/${pet.maxLevel}${maxLevelIndicator}`;
+    const emoji = petEmojis[pet.name] || '🐾'; // Default emoji
+    return `${emoji} ${escapeMarkdown(pet.name)}: ${pet.level}/${pet.maxLevel}${maxLevelIndicator}`;
   }).join('\n');
   
   return `
@@ -468,12 +606,25 @@ export function formatPlayerSiegeMachines(player: Player): string {
     return 'No siege machine data available';
   }
   
+  // Map siege machine names to emojis
+  const siegeEmojis: {[key: string]: string} = {
+    'Wall Wrecker': '🚚',
+    'Battle Blimp': '🎈',
+    'Stone Slammer': '🪨',
+    'Siege Barracks': '🏛️',
+    'Log Launcher': '🪵',
+    'Flame Flinger': '🔥',
+    'Battle Drill': '⚙️',
+    'Troop Launcher': '🚀'
+  };
+  
   // Sort siege machines by name
   const sortedMachines = [...siegeMachines].sort((a, b) => a.name.localeCompare(b.name));
   
   const machinesList = sortedMachines.map(machine => {
     const maxLevelIndicator = machine.level === machine.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(machine.name)}: ${machine.level}/${machine.maxLevel}${maxLevelIndicator}`;
+    const emoji = siegeEmojis[machine.name] || '🛠️'; // Default emoji
+    return `${emoji} ${escapeMarkdown(machine.name)}: ${machine.level}/${machine.maxLevel}${maxLevelIndicator}`;
   }).join('\n');
   
   return `
@@ -515,12 +666,26 @@ export function formatPlayerElixirSpells(player: Player): string {
     return 'No elixir spell data available';
   }
   
+  // Map spell names to emojis
+  const spellEmojis: {[key: string]: string} = {
+    'Lightning Spell': '⚡',
+    'Healing Spell': '❤️',
+    'Rage Spell': '😡',
+    'Jump Spell': '🦘',
+    'Freeze Spell': '❄️',
+    'Clone Spell': '👥',
+    'Invisibility Spell': '👻',
+    'Recall Spell': '↩️',
+    'Revive Spell': '💫'
+  };
+  
   // Sort spells by name
   const sortedSpells = [...elixirSpells].sort((a, b) => a.name.localeCompare(b.name));
   
   const spellsList = sortedSpells.map(spell => {
     const maxLevelIndicator = spell.level === spell.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
+    const emoji = spellEmojis[spell.name] || '🧪'; // Default emoji
+    return `${emoji} ${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
   }).join('\n');
   
   return `
@@ -549,12 +714,24 @@ export function formatPlayerDarkSpells(player: Player): string {
     return 'No dark spell data available';
   }
   
+  // Map spell names to emojis
+  const darkSpellEmojis: {[key: string]: string} = {
+    'Poison Spell': '☠️',
+    'Earthquake Spell': '🌋',
+    'Haste Spell': '💨',
+    'Skeleton Spell': '💀',
+    'Bat Spell': '🦇',
+    'Overgrowth Spell': '🌿',
+    'Ice Block Spell': '🧊'
+  };
+  
   // Sort spells by name
   const sortedSpells = [...darkSpells].sort((a, b) => a.name.localeCompare(b.name));
   
   const spellsList = sortedSpells.map(spell => {
     const maxLevelIndicator = spell.level === spell.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
+    const emoji = darkSpellEmojis[spell.name] || '⚗️'; // Default emoji
+    return `${emoji} ${escapeMarkdown(spell.name)}: ${spell.level}/${spell.maxLevel}${maxLevelIndicator}`;
   }).join('\n');
   
   return `

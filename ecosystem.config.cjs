@@ -1,4 +1,4 @@
-// ecosystem.config.js
+// ecosystem.config.cjs - PM2 configuration for Clash of Clans bot
 module.exports = {
   apps: [{
     name: "coc",
@@ -21,6 +21,9 @@ module.exports = {
     merge_logs: true,
     time: true,
     interpreter: "node",
-    interpreter_args: "--experimental-specifier-resolution=node"
+    interpreter_args: "--experimental-specifier-resolution=node",
+    node_args: "--max-old-space-size=256",
+    kill_timeout: 3000,
+    wait_ready: true
   }]
 } 
