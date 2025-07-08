@@ -338,7 +338,7 @@ composer.callbackQuery(/^gold_pass_(.+)$/, async (ctx) => {
       // Debug log to see the raw data format
       console.log('Gold Pass data:', JSON.stringify(goldPass));
       
-      await ctx.editMessageText(`*Gold Pass for ${escapeMarkdown(player.name)}*\n\n${playerUtils.formatGoldPassStatus(goldPass)}`, {
+      await ctx.editMessageText(`*🏆 Gold Pass for ${escapeMarkdown(player.name)}* \\(${escapeMarkdown(player.tag)}\\)\n\n${playerUtils.formatGoldPassStatus(goldPass)}`, {
         parse_mode: 'MarkdownV2',
         reply_markup: playerUtils.createBackToPlayerKeyboard(playerTag)
       });
@@ -346,7 +346,7 @@ composer.callbackQuery(/^gold_pass_(.+)$/, async (ctx) => {
       console.error('Error fetching Gold Pass information:', goldPassError);
       
       // Fallback message if Gold Pass info can't be retrieved
-      await ctx.editMessageText(`*Gold Pass for ${escapeMarkdown(player.name)}*\n\n❌ *Gold Pass information is currently unavailable\\.*\n\nPlease check the Clash of Clans game for accurate Gold Pass details.`, {
+      await ctx.editMessageText(`*🏆 Gold Pass for ${escapeMarkdown(player.name)}* \\(${escapeMarkdown(player.tag)}\\)\n\n❌ *Gold Pass information is currently unavailable\\.*\n\nPlease check the Clash of Clans game for accurate Gold Pass details.`, {
         parse_mode: 'MarkdownV2',
         reply_markup: playerUtils.createBackToPlayerKeyboard(playerTag)
       });

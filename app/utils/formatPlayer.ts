@@ -102,7 +102,8 @@ export function formatGoldPassStatus(goldPass: GoldPassSeason): string {
   
   // Format dates in a readable way
   const formatDate = (date: Date): string => {
-    return `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   };
   
   // Check if Gold Pass is active
@@ -110,13 +111,26 @@ export function formatGoldPassStatus(goldPass: GoldPassSeason): string {
   const statusEmoji = isActive ? '✅' : '❌';
   const statusText = isActive ? 'Active' : 'Inactive';
   
+  // Create progress bar for days remaining
+  let progressBar = '';
+  if (isActive) {
+    const totalDays = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60 * 24));
+    const daysPassed = totalDays - daysRemaining;
+    const progressPercentage = Math.floor((daysPassed / totalDays) * 100);
+    
+    const filledBlocks = Math.floor(progressPercentage / 10);
+    const emptyBlocks = 10 - filledBlocks;
+    
+    progressBar = `\n*Progress:* [${'█'.repeat(filledBlocks)}${'░'.repeat(emptyBlocks)}] ${progressPercentage}%`;
+  }
+  
   return `
-*🏅 Gold Pass Status*
+*🏅 Gold Pass Season*
 
-*Status:* ${statusEmoji} ${statusText}
-*Season Start:* ${formatDate(startTime)}
-*Season End:* ${formatDate(endTime)}
-${isActive ? `*Days Remaining:* ${daysRemaining}` : '*Next Season:* Coming soon'}
+${statusEmoji} *Status:* ${statusText}
+📅 *Start Date:* ${formatDate(startTime)}
+🗓️ *End Date:* ${formatDate(endTime)}
+${isActive ? `⏳ *Days Remaining:* ${daysRemaining}${progressBar}` : '🔜 *Next Season:* Coming soon'}
 `.trim();
 }
 
