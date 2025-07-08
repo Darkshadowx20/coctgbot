@@ -274,8 +274,13 @@ composer.callbackQuery(/^builder_base_(.+)$/, async (ctx) => {
   try {
     const player = await cocApi.getPlayer(playerTag);
     
-    // Show the builder base menu with options
-    await ctx.editMessageText(`*Builder Base Options for ${escapeMarkdown(player.name)}*\n\nSelect an option to view Builder Base details:`, {
+    // Debug log to see the raw builder base league data
+    if (player.builderBaseLeague) {
+      console.log('Builder Base League data:', JSON.stringify(player.builderBaseLeague));
+    }
+    
+    // Show comprehensive builder base details
+    await ctx.editMessageText(playerUtils.formatPlayerBuilderBaseDetails(player), {
       parse_mode: 'MarkdownV2',
       reply_markup: playerUtils.createBuilderBaseKeyboard(playerTag)
     });

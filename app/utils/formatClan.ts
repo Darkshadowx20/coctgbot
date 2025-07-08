@@ -17,6 +17,7 @@ import { InlineKeyboard } from 'grammy';
  */
 export function escapeMarkdown(text: string): string {
   if (!text) return '';
+  // Make sure to explicitly escape pipe character
   return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
 }
 

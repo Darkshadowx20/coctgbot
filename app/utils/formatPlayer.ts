@@ -42,12 +42,17 @@ export function formatPlayerInfo(player: Player): string {
     builderBaseInfo = '\n\n*📊 Builder Base*';
     builderBaseInfo += `\n🏠 *Builder Hall:* ${player.builderHallLevel}`;
     
-    // Only show stats that are available
-    if (typeof player.versusTrophies === 'number') {
+    // Check for builderBaseTrophies first (newer API), fall back to versusTrophies (older API)
+    if (typeof player.builderBaseTrophies === 'number') {
+      builderBaseInfo += `\n🏆 *Versus Trophies:* ${player.builderBaseTrophies}`;
+    } else if (typeof player.versusTrophies === 'number') {
       builderBaseInfo += `\n🏆 *Versus Trophies:* ${player.versusTrophies}`;
     }
     
-    if (typeof player.bestVersusTrophies === 'number') {
+    // Check for bestBuilderBaseTrophies first (newer API), fall back to bestVersusTrophies (older API)
+    if (typeof player.bestBuilderBaseTrophies === 'number') {
+      builderBaseInfo += `\n🏅 *Best Versus Trophies:* ${player.bestBuilderBaseTrophies}`;
+    } else if (typeof player.bestVersusTrophies === 'number') {
       builderBaseInfo += `\n🏅 *Best Versus Trophies:* ${player.bestVersusTrophies}`;
     }
     
@@ -841,10 +846,10 @@ ${spellsList}
  */
 export function createBuilderBaseKeyboard(playerTag: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text("🪖 BB Troops", `builder_troops_${playerTag}`)
-    .text("👑 BB Heroes", `builder_heroes_${playerTag}`)
+    .text("🪖 Builder Troops", `builder_troops_${playerTag}`)
+    .text("🤖 Builder Heroes", `builder_heroes_${playerTag}`)
     .row()
-    .text("« Back", `back_to_player_${playerTag}`);
+    .text("« Back to Player", `back_to_player_${playerTag}`);
 }
 
 /**
@@ -935,6 +940,103 @@ ${heroesList}
 `.trim();
 }
 
+/**
+ * Format comprehensive builder base details
+ */
+export function formatPlayerBuilderBaseDetails(player: Player): string {
+  if (!player.builderHallLevel) {
+    return 'No Builder Base data available for this player.';
+  }
+  
+  // Builder Base stats section with better formatting
+  let statsSection = '*🏗️ Builder Base Stats*\n';
+  statsSection += `🏠 *Builder Hall:* ${player.builderHallLevel}\n`;
+  
+  // Use builderBaseTrophies first, fall back to versusTrophies for backward compatibility
+  const trophies = player.builderBaseTrophies !== undefined ? player.builderBaseTrophies : player.versusTrophies;
+  if (typeof trophies === 'number') {
+    statsSection += `🏆 *Versus Trophies:* ${trophies}`;
+    
+    // Add Builder Base League if available
+    if (player.builderBaseLeague) {
+      let leagueName = '';
+      
+      if (typeof player.builderBaseLeague.name === 'string') {
+        leagueName = player.builderBaseLeague.name;
+      } else if (player.builderBaseLeague.name) {
+        // Try to get English name first
+        if (player.builderBaseLeague.name.en) {
+          leagueName = player.builderBaseLeague.name.en;
+        } else {
+          // Get first available language
+          const keys = Object.keys(player.builderBaseLeague.name);
+          if (keys.length > 0) {
+            leagueName = player.builderBaseLeague.name[keys[0]];
+          }
+        }
+      }
+      
+      if (leagueName) {
+        // Escape the pipe character for MarkdownV2
+        statsSection += ` \\| ${escapeMarkdown(leagueName)}`;
+      }
+    }
+    statsSection += '\n';
+  }
+  
+  // Use bestBuilderBaseTrophies first, fall back to bestVersusTrophies for backward compatibility
+  const bestTrophies = player.bestBuilderBaseTrophies !== undefined ? player.bestBuilderBaseTrophies : player.bestVersusTrophies;
+  if (typeof bestTrophies === 'number') {
+    statsSection += `🏅 *Best Versus Trophies:* ${bestTrophies}\n`;
+  }
+  
+  if (typeof player.versusBattleWins === 'number') {
+    statsSection += `⚔️ *Versus Battle Wins:* ${player.versusBattleWins}\n`;
+  }
+  
+  // Count Builder Base troops and heroes
+  let troopCount = 0;
+  let maxedTroopCount = 0;
+  let heroCount = 0;
+  let maxedHeroCount = 0;
+  
+  if (player.troops) {
+    const builderTroops = player.troops.filter(troop => troop.village === 'builderBase');
+    troopCount = builderTroops.length;
+    maxedTroopCount = builderTroops.filter(troop => troop.level === troop.maxLevel).length;
+  }
+  
+  if (player.heroes) {
+    const builderHeroes = player.heroes.filter(hero => hero.village === 'builderBase');
+    heroCount = builderHeroes.length;
+    maxedHeroCount = builderHeroes.filter(hero => hero.level === hero.maxLevel).length;
+  }
+  
+  // Add troop and hero counts with better formatting and visual progress
+  let unitsSection = '\n*🛡️ Builder Base Army*\n';
+  
+  // Create visual progress bar for maxed troops
+  const troopProgressPercentage = troopCount > 0 ? Math.floor((maxedTroopCount / troopCount) * 100) : 0;
+  const troopFilledBlocks = Math.floor(troopProgressPercentage / 10);
+  const troopEmptyBlocks = 10 - troopFilledBlocks;
+  const troopProgressBar = `[${'█'.repeat(troopFilledBlocks)}${'░'.repeat(troopEmptyBlocks)}] ${troopProgressPercentage}%`;
+  
+  // Create visual progress bar for maxed heroes
+  const heroProgressPercentage = heroCount > 0 ? Math.floor((maxedHeroCount / heroCount) * 100) : 0;
+  const heroFilledBlocks = Math.floor(heroProgressPercentage / 10);
+  const heroEmptyBlocks = 10 - heroFilledBlocks;
+  const heroProgressBar = `[${'█'.repeat(heroFilledBlocks)}${'░'.repeat(heroEmptyBlocks)}] ${heroProgressPercentage}%`;
+  
+  unitsSection += `🪖 *Troops:* ${troopCount} \\(${maxedTroopCount} maxed\\) ${troopProgressBar}\n`;
+  unitsSection += `👑 *Heroes:* ${heroCount} \\(${maxedHeroCount} maxed\\) ${heroProgressBar}\n`;
+  
+  return `
+*📊 Builder Base for ${escapeMarkdown(player.name)}* \\(${escapeMarkdown(player.tag)}\\)
+
+${statsSection}${unitsSection}
+`.trim();
+}
+
 export default {
   formatPlayerInfo,
   formatPlayerTroops,
@@ -958,4 +1060,5 @@ export default {
   formatPlayerBuilderTroops,
   formatPlayerBuilderHeroes,
   formatGoldPassStatus,
+  formatPlayerBuilderBaseDetails,
 }; 

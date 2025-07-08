@@ -30,6 +30,11 @@ export interface League {
   iconUrls: IconUrls;
 }
 
+export interface BuilderBaseLeague {
+  id: number;
+  name: string | { [key: string]: string };
+}
+
 export interface Paging {
   cursors?: {
     after?: string;
@@ -44,6 +49,7 @@ export interface Player {
   tag: string;
   name: string;
   townHallLevel: number;
+  townHallWeaponLevel?: number;
   expLevel: number;
   trophies: number;
   bestTrophies: number;
@@ -51,8 +57,10 @@ export interface Player {
   attackWins: number;
   defenseWins: number;
   builderHallLevel?: number;
-  versusTrophies?: number;
-  bestVersusTrophies?: number;
+  builderBaseTrophies?: number;
+  bestBuilderBaseTrophies?: number;
+  versusTrophies?: number; // Legacy field
+  bestVersusTrophies?: number; // Legacy field
   versusBattleWins?: number;
   role?: string;
   warPreference?: string;
@@ -60,12 +68,15 @@ export interface Player {
   donationsReceived?: number;
   clan?: ClanBasicInfo;
   league?: League;
+  builderBaseLeague?: BuilderBaseLeague;
   legendStatistics?: LegendStatistics;
   achievements?: Achievement[];
   labels?: Label[];
   troops?: Troop[];
   heroes?: Hero[];
   spells?: Spell[];
+  heroEquipment?: HeroEquipment[];
+  clanCapitalContributions?: number;
 }
 
 export interface ClanBasicInfo {
@@ -113,6 +124,13 @@ export interface Hero {
 }
 
 export interface Spell {
+  name: string;
+  level: number;
+  maxLevel: number;
+  village: string;
+}
+
+export interface HeroEquipment {
   name: string;
   level: number;
   maxLevel: number;
