@@ -2,7 +2,8 @@ import {
   Player, 
   PlayerRankingList, 
   PlayerVersusBattleRankingList,
-  LeagueRankingList
+  LeagueRankingList,
+  Troop
 } from '../types/coc.js';
 import { InlineKeyboard } from 'grammy';
 import { escapeMarkdown } from './formatClan.js';
@@ -69,24 +70,60 @@ export function formatPlayerTroops(player: Player): string {
     return 'No troop data available';
   }
 
-  // Filter home village troops and exclude super troops
+  // Filter home village troops (exclude super troops)
   const homeVillageTroops = player.troops.filter(troop => 
     troop.village === 'home' && !troop.name.startsWith('Super')
   );
   
-  // Sort troops by name
-  const sortedTroops = [...homeVillageTroops].sort((a, b) => a.name.localeCompare(b.name));
+  // Identify hero pets, siege machines, and regular troops
+  const heroPets = homeVillageTroops.filter(troop => 
+    ['L.A.S.S.I', 'Electro Owl', 'Mighty Yak', 'Unicorn', 
+    'Frosty', 'Diggy', 'Poison Lizard', 'Phoenix', 
+    'Spirit Fox', 'Angry Jelly', 'Sneezy'].includes(troop.name)
+  );
   
-  const troopsList = sortedTroops.map(troop => {
-    const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
-    return `${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
-  }).join('\n');
+  const siegeMachines = homeVillageTroops.filter(troop => 
+    ['Wall Wrecker', 'Battle Blimp', 'Stone Slammer', 'Siege Barracks',
+    'Log Launcher', 'Flame Flinger', 'Battle Drill', 'Troop Launcher'].includes(troop.name)
+  );
+  
+  // Define elixir troops and dark elixir troops
+  const elixirTroops = homeVillageTroops.filter(troop => 
+    ['Barbarian', 'Archer', 'Giant', 'Goblin', 'Wall Breaker', 
+    'Balloon', 'Wizard', 'Healer', 'Dragon', 'P.E.K.K.A', 'Baby Dragon', 
+    'Miner', 'Electro Dragon', 'Yeti', 'Dragon Rider', 'Electro Titan',
+    'Root Rider', 'Thrower'].includes(troop.name)
+  );
+  
+  const darkElixirTroops = homeVillageTroops.filter(troop => 
+    ['Minion', 'Hog Rider', 'Valkyrie', 'Golem', 'Witch', 'Lava Hound', 
+    'Bowler', 'Ice Golem', 'Headhunter', 'Apprentice Warden', 'Druid', 
+    'Furnace'].includes(troop.name)
+  );
+  
+  // Format sections
+  const formatSection = (troops: Troop[], title: string): string => {
+    if (troops.length === 0) return '';
+    
+    const sortedTroops = [...troops].sort((a, b) => a.name.localeCompare(b.name));
+    const troopsList = sortedTroops.map(troop => {
+      const maxLevelIndicator = troop.level === troop.maxLevel ? ' ✅' : '';
+      return `${escapeMarkdown(troop.name)}: ${troop.level}/${troop.maxLevel}${maxLevelIndicator}`;
+    }).join('\n');
+    
+    return `*${title}*\n${troopsList}\n\n`;
+  };
+  
+  // Build the message with all sections
+  const elixirTroopsSection = formatSection(elixirTroops, 'Elixir Troops');
+  const darkElixirTroopsSection = formatSection(darkElixirTroops, 'Dark Elixir Troops');
+  const heroPetsSection = formatSection(heroPets, 'Hero Pets');
+  const siegeMachinesSection = formatSection(siegeMachines, 'Siege Machines');
   
   return `
 *Troops for ${escapeMarkdown(player.name)}*
 
-${troopsList}
-`.trim();
+${elixirTroopsSection}${darkElixirTroopsSection}${heroPetsSection}${siegeMachinesSection}`.trim();
 }
 
 /**
