@@ -698,36 +698,178 @@ export function createWarLogKeyboard(clanTag: string, currentPage: number, total
  */
 export function formatCurrentWar(war: ClanWar): string {
   if (!war || war.state === 'notInWar') {
-    return 'This clan is not currently in war';
+    return '*Current War Status*\n\nThis clan is not currently in war\\.';
   }
   
   const clanName = escapeMarkdown(war.clan.name);
   const opponentName = escapeMarkdown(war.opponent.name);
   
-  let status = '';
-  let timeInfo = '';
+  // Format the war state with icon and time remaining
+  let stateInfo = '';
+  let timeRemaining = '';
+  let resultInfo = '';
   
+  // Format war dates
+  const formatWarDate = (dateStr: string | undefined): string => {
+    if (!dateStr) return 'Unavailable';
+    
+    try {
+      // First try standard parsing
+      const date = new Date(dateStr);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        // Try parsing CoC's special format if standard parsing fails
+        const matches = dateStr.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/);
+        if (matches) {
+          const [_, year, month, day, hour, minute, second, ms] = matches;
+          const parsedDate = new Date(
+            parseInt(year),
+            parseInt(month) - 1, // month is 0-indexed
+            parseInt(day),
+            parseInt(hour),
+            parseInt(minute),
+            parseInt(second),
+            parseInt(ms)
+          );
+          
+          if (!isNaN(parsedDate.getTime())) {
+            // Format: Month Day, Year HH:MM
+            const dateString = parsedDate.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric', 
+              year: 'numeric'
+            });
+            
+            const timeString = parsedDate.toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            return (dateString + ' ' + timeString).replace(/\./g, '\\.');
+          }
+        }
+        return 'Unavailable';
+      }
+      
+      // Format: Month Day, Year HH:MM
+      const dateString = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      
+      const timeString = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      return (dateString + ' ' + timeString).replace(/\./g, '\\.');
+    } catch (error) {
+      return 'Unavailable';
+    }
+  };
+  
+  // Helper function to safely parse date strings
+  const parseWarDate = (dateStr: string | undefined): Date | null => {
+    if (!dateStr) return null;
+    
+    try {
+      // Try standard parsing first
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+      
+      // Try parsing CoC's special format if standard parsing fails
+      const matches = dateStr.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/);
+      if (matches) {
+        const [_, year, month, day, hour, minute, second, ms] = matches;
+        const parsedDate = new Date(
+          parseInt(year),
+          parseInt(month) - 1, // month is 0-indexed
+          parseInt(day),
+          parseInt(hour),
+          parseInt(minute),
+          parseInt(second),
+          parseInt(ms)
+        );
+        
+        if (!isNaN(parsedDate.getTime())) {
+          return parsedDate;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
+  };
+  
+  // Build time-related strings
+  const prepStartStr = war.preparationStartTime ? `📆 Prep Start: ${formatWarDate(war.preparationStartTime)}` : '';
+  const warStartStr = war.startTime ? `⚔️ Battle Start: ${formatWarDate(war.startTime)}` : '';
+  const warEndStr = war.endTime ? `🏁 War End: ${formatWarDate(war.endTime)}` : '';
+  
+  const now = Date.now();
+  
+  // Calculate time remaining based on war state
   if (war.state === 'preparation') {
-    const preparationEndTime = new Date(war.startTime).getTime();
-    const now = Date.now();
-    const hoursLeft = Math.floor((preparationEndTime - now) / (1000 * 60 * 60));
-    const minutesLeft = Math.floor(((preparationEndTime - now) % (1000 * 60 * 60)) / (1000 * 60));
-    
-    status = '🔄 *Preparation Day*';
-    timeInfo = `War starts in: ${hoursLeft}h ${minutesLeft}m`;
+    try {
+      const startDate = parseWarDate(war.startTime);
+      if (startDate) {
+        const timeDiff = startDate.getTime() - now;
+        if (timeDiff < 0) {
+          timeRemaining = `⏰ War should be in battle phase`;
+        } else {
+          const hoursLeft = Math.floor(timeDiff / (1000 * 60 * 60));
+          const minutesLeft = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+          timeRemaining = `⏰ Time remaining: ${hoursLeft}h ${minutesLeft}m`;
+        }
+      } else {
+        timeRemaining = `⏰ Time remaining: Unknown`;
+      }
+      
+      stateInfo = '🛡️ *PREPARATION DAY*';
+    } catch (error) {
+      timeRemaining = '⏰ Time remaining: Unknown';
+      stateInfo = '🛡️ *PREPARATION DAY*';
+    }
   } else if (war.state === 'inWar') {
-    const warEndTime = new Date(war.endTime).getTime();
-    const now = Date.now();
-    const hoursLeft = Math.floor((warEndTime - now) / (1000 * 60 * 60));
-    const minutesLeft = Math.floor(((warEndTime - now) % (1000 * 60 * 60)) / (1000 * 60));
-    
-    status = '⚔️ *Battle Day*';
-    timeInfo = `War ends in: ${hoursLeft}h ${minutesLeft}m`;
+    try {
+      const endDate = parseWarDate(war.endTime);
+      if (endDate) {
+        const timeDiff = endDate.getTime() - now;
+        if (timeDiff < 0) {
+          timeRemaining = `⏰ War should be over`;
+        } else {
+          const hoursLeft = Math.floor(timeDiff / (1000 * 60 * 60));
+          const minutesLeft = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+          timeRemaining = `⏰ Time remaining: ${hoursLeft}h ${minutesLeft}m`;
+        }
+      } else {
+        timeRemaining = `⏰ Time remaining: Unknown`;
+      }
+      
+      stateInfo = '⚔️ *BATTLE DAY*';
+    } catch (error) {
+      timeRemaining = '⏰ Time remaining: Unknown';
+      stateInfo = '⚔️ *BATTLE DAY*';
+    }
   } else if (war.state === 'warEnded') {
-    status = '🏁 *War Ended*';
-    timeInfo = `Result: ${war.result === 'win' ? 'Victory!' : war.result === 'lose' ? 'Defeat' : 'Tie'}`;
+    // Format result info with appropriate styling
+    if (war.result === 'win') {
+      resultInfo = '🏆 *VICTORY!*';
+    } else if (war.result === 'lose') {
+      resultInfo = '❌ *DEFEAT*';
+    } else {
+      resultInfo = '🤝 *DRAW*';
+    }
+    
+    stateInfo = '🏁 *WAR ENDED*';
   }
   
+  // Format clan stats with more UI improvements
   const clanStars = war.clan.stars || 0;
   const opponentStars = war.opponent.stars || 0;
   
@@ -736,22 +878,104 @@ export function formatCurrentWar(war: ClanWar): string {
   
   const clanAttacks = war.clan.attacks || 0;
   const totalPossibleAttacks = war.teamSize * 2;
+  const attacksRemaining = totalPossibleAttacks - clanAttacks;
   
-  return `
-*${clanName} vs ${opponentName}*
-${status}
-${timeInfo}
-
-*Team Size:* ${war.teamSize}v${war.teamSize}
-
+  // Calculate star and destruction differences with proper escaping
+  let starDiff = clanStars - opponentStars;
+  let starDiffStr = '';
+  if (starDiff > 0) {
+    starDiffStr = `\\+${starDiff}`;
+  } else if (starDiff < 0) {
+    starDiffStr = `${starDiff}`.replace('-', '\\-'); // Escape minus sign
+  } else {
+    starDiffStr = '0';
+  }
+  
+  let destructionDiff = ((war.clan.destructionPercentage || 0) - (war.opponent.destructionPercentage || 0)).toFixed(2);
+  let destructionDiffStr = '';
+  if (parseFloat(destructionDiff) > 0) {
+    destructionDiffStr = `\\+${destructionDiff.replace('.', '\\.')}%`;
+  } else if (parseFloat(destructionDiff) < 0) {
+    destructionDiffStr = `${destructionDiff}%`.replace('-', '\\-').replace('.', '\\.');
+  } else {
+    destructionDiffStr = '0\\.00%';
+  }
+  
+  // Define advantage status based on stars and destruction
+  let advantageStatus = '';
+  let advantageEmoji = '';
+  if (starDiff > 0) {
+    advantageStatus = 'Leading';
+    advantageEmoji = '🔥';
+  } else if (starDiff < 0) {
+    advantageStatus = 'Behind';
+    advantageEmoji = '⚠️';
+  } else {
+    if (parseFloat(destructionDiff) > 0) {
+      advantageStatus = 'Leading on destruction';
+      advantageEmoji = '✅';
+    } else if (parseFloat(destructionDiff) < 0) {
+      advantageStatus = 'Behind on destruction';
+      advantageEmoji = '⚠️';
+    } else {
+      advantageStatus = 'Even match';
+      advantageEmoji = '⚖️';
+    }
+  }
+  
+  // Format UI sections with improved layout
+  const header = `*${clanName} vs ${opponentName}*`;
+  const subHeader = `${stateInfo}${resultInfo ? ' • ' + resultInfo : ''}`;
+  const warSizeInfo = `👥 *Team Size:* ${war.teamSize}v${war.teamSize}`;
+  const timeInfo = timeRemaining ? `${timeRemaining}` : '';
+  const datesSection = [prepStartStr, warStartStr, warEndStr].filter(Boolean).join('\n');
+  
+  // War performance section with improved visibility - remove badges
+  const clanSection = `
 *${clanName}*
 ⭐ Stars: ${clanStars}
 💥 Destruction: ${clanDestruction}%
-⚔️ Attacks Used: ${clanAttacks}/${totalPossibleAttacks}
-
+🗡️ Attacks: ${clanAttacks}/${totalPossibleAttacks} \\(${attacksRemaining} remaining\\)`;
+  
+  const opponentSection = `
 *${opponentName}*
 ⭐ Stars: ${opponentStars}
-💥 Destruction: ${opponentDestruction}%
+💥 Destruction: ${opponentDestruction}%`;
+  
+  // Enhanced comparison section with advantage status and visual indicator
+  let statusEmoji = '';
+  if (starDiff > 0) {
+    statusEmoji = '🏆';
+  } else if (starDiff < 0) {
+    statusEmoji = '🚫';
+  } else {
+    statusEmoji = '⚖️';
+  }
+  
+  const comparisonSection = `
+*${statusEmoji} Comparison*
+⭐ Stars: ${clanStars} vs ${opponentStars} \\(${starDiffStr}\\)
+💥 Destruction: ${clanDestruction}% vs ${opponentDestruction}% \\(${destructionDiffStr}\\)
+*Status:* ${advantageEmoji} ${advantageStatus}`;
+
+  // Create a visually improved layout with better separators and spacing
+  return `
+${header}
+${subHeader}
+
+${warSizeInfo}
+${timeInfo}
+
+${datesSection}
+
+💫 ━━━━━━━ *YOUR CLAN* ━━━━━━━ 💫
+${clanSection}
+
+🔥 ━━━━━━━ *OPPONENT* ━━━━━━━ 🔥
+${opponentSection}
+
+🏅 ━━━━━━ *BATTLE STATUS* ━━━━━━ 🏅
+${comparisonSection}
 `.trim();
 }
 
