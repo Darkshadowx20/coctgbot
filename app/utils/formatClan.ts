@@ -328,7 +328,7 @@ export function createBackToClanKeyboard(clanTag: string): InlineKeyboard {
 /**
  * Format top donators from clan
  */
-export function formatTopDonators(members: ClanMember[] | ClanMemberList): string {
+export function formatTopDonators(members: ClanMember[] | ClanMemberList, page: number = 1): string {
   // Handle different input types
   const memberArray = Array.isArray(members) ? members : members.items;
   
@@ -337,20 +337,145 @@ export function formatTopDonators(members: ClanMember[] | ClanMemberList): strin
   }
 
   // Sort members by donations (highest first)
-  const sortedMembers = [...memberArray]
-    .sort((a, b) => b.donations - a.donations);
+  const sortedMembers = [...memberArray].sort((a, b) => b.donations - a.donations);
   
-  // Get top 10 donators
-  const topDonators = sortedMembers.slice(0, 10);
+  // Calculate pagination
+  const pageSize = 10;
+  const totalPages = Math.ceil(sortedMembers.length / pageSize);
+  const validPage = Math.max(1, Math.min(page, totalPages));
+  const startIdx = (validPage - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, sortedMembers.length);
   
-  const donatorsList = topDonators.map(member => 
-    `${escapeMarkdown(member.name)} \\(${escapeMarkdown(member.role)}\\): ${member.donations.toString().replace(/\d(?=(\d{3})+$)/g, '$&,').replace(/\./g, '\\.')} donated \\| ${member.donationsReceived.toString().replace(/\d(?=(\d{3})+$)/g, '$&,').replace(/\./g, '\\.')} received`
-  ).join('\n');
+  // Get donators for current page
+  const pageDonators = sortedMembers.slice(startIdx, endIdx);
+
+  // Helper function to get league icon
+  const getLeagueIcon = (trophies: number): string => {
+    if (trophies >= 5000) return '🔮';
+    if (trophies >= 4100) return '💎';
+    if (trophies >= 3100) return '🏆';
+    if (trophies >= 2600) return '🥇';
+    if (trophies >= 2000) return '🥈';
+    if (trophies >= 1400) return '🥉';
+    if (trophies >= 800) return '🔷';
+    return '🔶';
+  };
+  
+  // Format each donator with improved UI
+  const donatorsList = pageDonators.map((member, index) => {
+    const position = startIdx + index + 1;
+    const name = escapeMarkdown(member.name);
+    
+    // Determine role icon
+    let roleIcon = '👤';
+    if (member.role === 'leader') roleIcon = '👑';
+    else if (member.role === 'coLeader') roleIcon = '⭐';
+    else if (member.role === 'admin') roleIcon = '🔱';
+    
+    // Format donation numbers with commas and escaping
+    const donations = member.donations.toLocaleString().replace(/\./g, '\\.');
+    const received = member.donationsReceived.toLocaleString().replace(/\./g, '\\.');
+    
+    // Calculate donation ratio
+    let ratio = 0;
+    let ratioText = '';
+    if (member.donationsReceived > 0) {
+      ratio = member.donations / member.donationsReceived;
+      ratioText = ratio.toFixed(1).replace(/\./g, '\\.');
+      ratioText = ` \\(${ratioText}x\\)`;
+    }
+    
+    // Calculate donation efficiency
+    const efficiency = ratio >= 1 ? '✅' : '❗';
+    
+    // Get league icon
+    const leagueIcon = getLeagueIcon(member.trophies);
+    
+    return `${position}\\. ${roleIcon} ${name} ${leagueIcon}
+📦 ${donations} donated \\| 📥 ${received} received${ratioText} ${efficiency}
+──────────`;
+  }).join('\n');
+  
+  // Calculate donation statistics
+  const totalDonations = memberArray.reduce((sum, member) => sum + member.donations, 0);
+  const totalReceived = memberArray.reduce((sum, member) => sum + member.donationsReceived, 0);
+  const avgDonations = Math.round(totalDonations / memberArray.length);
+  const avgReceived = Math.round(totalReceived / memberArray.length);
+  
+  // Find top donor
+  const topDonor = sortedMembers.length > 0 ? sortedMembers[0] : null;
+  
+  // Find members with no donations
+  const zeroDonors = memberArray.filter(member => member.donations === 0).length;
+  const zeroDonorsPercent = Math.round((zeroDonors / memberArray.length) * 100);
+  
+  // Get range information
+  const showingStart = startIdx + 1;
+  const showingEnd = endIdx;
+  const totalMembers = memberArray.length;
+  
+  // Create detailed footer with statistics
+  const details = `
+📊 *Donation Statistics*
+📦 Total Donations: ${totalDonations.toLocaleString().replace(/\./g, '\\.')}
+📥 Total Received: ${totalReceived.toLocaleString().replace(/\./g, '\\.')}
+📈 Average Donations: ${avgDonations.toLocaleString().replace(/\./g, '\\.')}
+📉 Average Received: ${avgReceived.toLocaleString().replace(/\./g, '\\.')}
+${topDonor ? `🥇 Top Donor: ${escapeMarkdown(topDonor.name)} \\(${topDonor.donations.toLocaleString().replace(/\./g, '\\.')}\\)` : ''}
+❗ Members with Zero Donations: ${zeroDonors} \\(${zeroDonorsPercent}%\\)
+
+📋 Page ${validPage}/${totalPages} \\| Showing ${showingStart}\\-${showingEnd} of ${totalMembers}
+
+📖 *Symbol Legend*
+Roles: 👑 Leader \\| ⭐ Co\\-Leader \\| 🔱 Elder \\| 👤 Member
+Efficiency: ✅ Good ratio \\(≥1\\) \\| ❗ Needs improvement \\(<1\\)
+Leagues: 🔮 Legend \\| 💎 Titan \\| 🏆 Champion \\| 🥇 Master \\| 🥈 Crystal \\| 🥉 Gold \\| 🔷 Silver \\| 🔶 Bronze`;
   
   return `
 *Top Donators*
+
 ${donatorsList}
+
+${details}
 `.trim();
+}
+
+/**
+ * Create pagination keyboard for top donators
+ */
+export function createTopDonatorsKeyboard(clanTag: string, currentPage: number, totalMembers: number): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  const totalPages = Math.ceil(totalMembers / 10);
+  
+  // First page button (if not on first page)
+  if (currentPage > 1) {
+    keyboard.text("« First", `donators_${clanTag}_1`);
+  }
+  
+  // Previous page button
+  if (currentPage > 1) {
+    keyboard.text("‹ Prev", `donators_${clanTag}_${currentPage - 1}`);
+  }
+  
+  // Current page indicator (non-clickable)
+  keyboard.text(`${currentPage}/${totalPages}`, `donators_page_info`);
+  
+  // Next page button
+  if (currentPage < totalPages) {
+    keyboard.text("Next ›", `donators_${clanTag}_${currentPage + 1}`);
+  }
+  
+  // Last page button (if not on last page)
+  if (currentPage < totalPages) {
+    keyboard.text("Last »", `donators_${clanTag}_${totalPages}`);
+  }
+  
+  // Add second row with back button and refresh
+  keyboard.row()
+    .text("« Back to Clan", `back_to_clan_${clanTag}`)
+    .text("🔄 Refresh", `donators_${clanTag}_${currentPage}`);
+  
+  return keyboard;
 }
 
 /**
@@ -597,4 +722,5 @@ export default {
   createBackToClanKeyboard,
   createClanSearchResultsKeyboard,
   createClanMembersKeyboard,
+  createTopDonatorsKeyboard,
 }; 

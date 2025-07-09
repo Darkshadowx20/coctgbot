@@ -167,8 +167,8 @@ export function createBackToPlayerKeyboard(playerTag: string): InlineKeyboard {
  */
 export function createTroopTypesKeyboard(playerTag: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text("💧 Elixir Troops", `elixir_troops_${playerTag}`)
-    .text("🖤 Dark Troops", `dark_troops_${playerTag}`)
+    .text("🔮 Elixir Troops", `elixir_troops_${playerTag}`)
+    .text("🧿 Dark Troops", `dark_troops_${playerTag}`)
     .row()
     .text("🐾 Hero Pets", `hero_pets_${playerTag}`)
     .text("🛠️ Siege Machines", `siege_machines_${playerTag}`)
