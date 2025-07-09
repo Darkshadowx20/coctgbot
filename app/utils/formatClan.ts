@@ -481,29 +481,163 @@ export function createTopDonatorsKeyboard(clanTag: string, currentPage: number, 
 /**
  * Format clan war log
  */
-export function formatClanWarLog(warLog: WarLog, clanName: string): string {
+export function formatClanWarLog(warLog: WarLog, clanName: string, page: number = 1): string {
   if (!warLog.items || warLog.items.length === 0) {
     return 'No war log data available or war log is private';
   }
   
-  // Get the most recent 5 wars
-  const recentWars = warLog.items.slice(0, 5);
+  // Calculate pagination
+  const pageSize = 5;
+  const totalWars = warLog.items.length;
+  const totalPages = Math.ceil(totalWars / pageSize);
+  const validPage = Math.max(1, Math.min(page, totalPages));
+  const startIdx = (validPage - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, totalWars);
   
-  const warsList = recentWars.map(war => {
-    const result = war.result === 'win' ? '✅ Won' : war.result === 'lose' ? '❌ Lost' : '🤝 Tied';
-    const endDate = new Date(war.endTime).toLocaleDateString();
+  // Get wars for current page
+  const pageWars = warLog.items.slice(startIdx, endIdx);
+  
+  // Helper function to format date
+  const formatDate = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    // Format: Month Day, Year
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric'
+    }).replace(/\./g, '\\.');
+  };
+  
+  // Format each war with improved details
+  const warsList = pageWars.map((war, index) => {
+    // Determine result icon and color indicator
+    let resultIcon = '';
+    let resultText = '';
+    if (war.result === 'win') {
+      resultIcon = '🏆';
+      resultText = 'Victory';
+    } else if (war.result === 'lose') {
+      resultIcon = '❌';
+      resultText = 'Defeat';
+    } else {
+      resultIcon = '🤝';
+      resultText = 'Draw';
+    }
+    
+    // Format destruction percentages with proper escaping
     const clanDestruction = war.clan.destructionPercentage.toFixed(2).replace('.', '\\.');
     const opponentDestruction = war.opponent.destructionPercentage.toFixed(2).replace('.', '\\.');
-    return `${result} vs ${escapeMarkdown(war.opponent.name)} \\(${war.teamSize}v${war.teamSize}\\) \\- ${endDate}
-    Stars: ${war.clan.stars}⭐ \\- ${war.opponent.stars}⭐
-    Destruction: ${clanDestruction}% \\- ${opponentDestruction}%`;
+    
+    // Calculate advantage/disadvantage
+    const starDiff = war.clan.stars - war.opponent.stars;
+    const destructionDiff = (war.clan.destructionPercentage - war.opponent.destructionPercentage).toFixed(2);
+    const starDiffText = starDiff > 0 ? `\\+${starDiff}` : starDiff.toString().replace('-', '\\-');
+    const destructionDiffText = destructionDiff.replace('-', '\\-').replace('.', '\\.');
+    
+    // Add war number indicator
+    const warNumber = startIdx + index + 1;
+    
+    return `*War \\#${warNumber}* \\- ${resultIcon} ${resultText}
+📅 ${formatDate(war.endTime)}
+🎯 ${escapeMarkdown(war.clan.name)} vs ${escapeMarkdown(war.opponent.name)} \\(${war.teamSize}v${war.teamSize}\\)
+
+*Performance:*
+⭐ Stars: ${war.clan.stars} \\- ${war.opponent.stars} \\(${starDiffText}\\)
+💥 Destruction: ${clanDestruction}% \\- ${opponentDestruction}% \\(${destructionDiffText}%\\)
+⚔️ Attacks: ${war.clan.attacks || 'N/A'}
+──────────`;
   }).join('\n\n');
   
+  // Calculate war statistics
+  const wins = warLog.items.filter(war => war.result === 'win').length;
+  const losses = warLog.items.filter(war => war.result === 'lose').length;
+  const ties = warLog.items.filter(war => war.result === 'tie').length;
+  
+  // Calculate win rate
+  const winRate = totalWars > 0 ? ((wins / totalWars) * 100).toFixed(1).replace('.', '\\.') : '0\\.0';
+  
+  // Calculate average stars and destruction
+  let totalClanStars = 0;
+  let totalOpponentStars = 0;
+  let totalClanDestruction = 0;
+  let totalOpponentDestruction = 0;
+  
+  warLog.items.forEach(war => {
+    totalClanStars += war.clan.stars;
+    totalOpponentStars += war.opponent.stars;
+    totalClanDestruction += war.clan.destructionPercentage;
+    totalOpponentDestruction += war.opponent.destructionPercentage;
+  });
+  
+  const avgClanStars = totalWars > 0 ? (totalClanStars / totalWars).toFixed(1).replace('.', '\\.') : '0\\.0';
+  const avgOpponentStars = totalWars > 0 ? (totalOpponentStars / totalWars).toFixed(1).replace('.', '\\.') : '0\\.0';
+  const avgClanDestruction = totalWars > 0 ? (totalClanDestruction / totalWars).toFixed(2).replace('.', '\\.') : '0\\.00';
+  const avgOpponentDestruction = totalWars > 0 ? (totalOpponentDestruction / totalWars).toFixed(2).replace('.', '\\.') : '0\\.00';
+  
+  // Build progress bar for win rate
+  const progressBarLength = 10;
+  const filledSquares = Math.round((wins / totalWars) * progressBarLength) || 0;
+  const emptySquares = progressBarLength - filledSquares;
+  const progressBar = `[${'■'.repeat(filledSquares)}${'□'.repeat(emptySquares)}] ${winRate}%`;
+  
+  // Create page indicator
+  const pageIndicator = `📋 Page ${validPage}/${totalPages} \\| Showing wars ${startIdx + 1}\\-${endIdx} of ${totalWars}`;
+  
+  // Create detailed stats section
+  const stats = `
+📊 *War Statistics Summary*
+📈 Record: ${wins}\\-${ties}\\-${losses} \\(W\\-T\\-L\\)
+🏆 Win Rate: ${progressBar}
+⭐ Avg Stars: ${avgClanStars} vs ${avgOpponentStars}
+💥 Avg Destruction: ${avgClanDestruction}% vs ${avgOpponentDestruction}%
+
+${pageIndicator}`;
+  
   return `
-*Recent Wars for ${escapeMarkdown(clanName)}*
+*War Log for ${escapeMarkdown(clanName)}*
 
 ${warsList}
+
+${stats}
 `.trim();
+}
+
+/**
+ * Create pagination keyboard for war log
+ */
+export function createWarLogKeyboard(clanTag: string, currentPage: number, totalWars: number): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  const totalPages = Math.ceil(totalWars / 5);
+  
+  // First page button (if not on first page)
+  if (currentPage > 1) {
+    keyboard.text("« First", `warlog_${clanTag}_1`);
+  }
+  
+  // Previous page button
+  if (currentPage > 1) {
+    keyboard.text("‹ Prev", `warlog_${clanTag}_${currentPage - 1}`);
+  }
+  
+  // Current page indicator (non-clickable)
+  keyboard.text(`${currentPage}/${totalPages}`, `warlog_page_info`);
+  
+  // Next page button
+  if (currentPage < totalPages) {
+    keyboard.text("Next ›", `warlog_${clanTag}_${currentPage + 1}`);
+  }
+  
+  // Last page button (if not on last page)
+  if (currentPage < totalPages) {
+    keyboard.text("Last »", `warlog_${clanTag}_${totalPages}`);
+  }
+  
+  // Add second row with back button and refresh
+  keyboard.row()
+    .text("« Back to Clan", `back_to_clan_${clanTag}`)
+    .text("🔄 Refresh", `warlog_${clanTag}_${currentPage}`);
+  
+  return keyboard;
 }
 
 /**
@@ -723,4 +857,5 @@ export default {
   createClanSearchResultsKeyboard,
   createClanMembersKeyboard,
   createTopDonatorsKeyboard,
+  createWarLogKeyboard,
 }; 
