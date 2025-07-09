@@ -70,15 +70,27 @@ composer.callbackQuery('donators_page_info', async (ctx) => {
   await ctx.answerCallbackQuery();
 });
 
+// Handle war log page info button click (do nothing)
+composer.callbackQuery('warlog_page_info', async (ctx) => {
+  await ctx.answerCallbackQuery();
+});
+
 composer.callbackQuery(/^warlog_(.+)$/, async (ctx) => {
-  const clanTag = ctx.match[1];
+  // Parse clan tag and page number from callback data
+  const match = ctx.match[1].match(/^(.+?)(?:_(\d+))?$/);
+  if (!match) return;
+  
+  const clanTag = match[1];
+  const page = match[2] ? parseInt(match[2]) : 1;
   
   try {
     const warLog = await cocApi.getClanWarLog(clanTag);
+    const clan = await cocApi.getClan(clanTag);
+    const clanName = clan.name;
     
-    await ctx.editMessageText(clanUtils.formatClanWarLog(warLog, clanTag), {
+    await ctx.editMessageText(clanUtils.formatClanWarLog(warLog, clanName, page), {
       parse_mode: 'MarkdownV2',
-      reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+      reply_markup: clanUtils.createWarLogKeyboard(clanTag, page, warLog.items ? warLog.items.length : 0)
     });
     
     await ctx.answerCallbackQuery();
