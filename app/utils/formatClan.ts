@@ -17,7 +17,7 @@ import { InlineKeyboard } from 'grammy';
  */
 export function escapeMarkdown(text: string): string {
   if (!text) return '';
-  // Make sure to explicitly escape pipe character
+  // Make sure to explicitly escape all special characters including pipe and period
   return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
 }
 
@@ -25,32 +25,91 @@ export function escapeMarkdown(text: string): string {
  * Format clan data for display in Telegram
  */
 export function formatClanInfo(clan: Clan): string {
+  // Handle war statistics
+  const warWins = clan.warWins !== undefined ? clan.warWins : 0;
+  const warTies = clan.warTies !== undefined ? clan.warTies : 0;
+  const warLosses = clan.warLosses !== undefined ? clan.warLosses : 0;
+  
+  // Handle league info
   const warLeagueInfo = clan.warLeague 
-    ? `\n🏆 War League: ${escapeMarkdown(clan.warLeague.name)}` 
-    : '\n🏆 War League: None';
-
+    ? `${escapeMarkdown(clan.warLeague.name)}` 
+    : 'None';
+  
+  // Handle location
   const locationInfo = clan.location 
-    ? `\n🌍 Location: ${escapeMarkdown(clan.location.name)}` 
-    : '\n🌍 Location: Not set';
+    ? `${escapeMarkdown(clan.location.name)}` 
+    : 'Not set';
+  
+  // Format clan versus points (show 0 instead of N/A)
+  const clanVersusPoints = clan.clanVersusPoints !== undefined 
+    ? clan.clanVersusPoints.toLocaleString() 
+    : '0';
+  
+  // Handle capital hall
+  const capitalInfo = clan.clanCapital?.capitalHallLevel
+    ? `${clan.clanCapital.capitalHallLevel}`
+    : 'N/A';
+    
+  // Calculate win rate and create progress bar
+  const totalWars = warWins + warTies + warLosses;
+  const winRateRaw = totalWars > 0 ? (warWins / totalWars * 100).toFixed(1) : '0.0';
+  // Escape decimal point for MarkdownV2
+  const winRate = winRateRaw.replace('.', '\\.'); 
+  
+  // Get performance indicator based on win rate
+  let performanceIndicator = '⚪'; // Default/no data
+  if (totalWars > 0) {
+    const winRateNum = parseFloat(winRateRaw);
+    if (winRateNum >= 80) performanceIndicator = '🟢'; // Excellent
+    else if (winRateNum >= 60) performanceIndicator = '🟢'; // Good
+    else if (winRateNum >= 40) performanceIndicator = '🟡'; // Average
+    else if (winRateNum >= 20) performanceIndicator = '🟠'; // Below average
+    else performanceIndicator = '🔴'; // Poor
+  }
+  
+  // Create win rate progress bar (10 chars width)
+  let progressBar = '';
+  if (totalWars > 0) {
+    const filledChars = Math.round((warWins / totalWars) * 10);
+    const emptyChars = 10 - filledChars;
+    progressBar = `[${'■'.repeat(filledChars)}${'□'.repeat(emptyChars)}] ${winRate}% ${performanceIndicator}`;
+  } else {
+    progressBar = '[□□□□□□□□□□] 0\\.0% ⚪';
+  }
+  
+  // Format win ratio text
+  const winRatioText = `${warWins}\\-${warTies}\\-${warLosses}`;
 
-  const capitalInfo = clan.clanCapital
-    ? `\n🏰 Capital Hall Level: ${clan.clanCapital.capitalHallLevel}`
-    : '';
+  // Format clan points with escaped commas and dots
+  const clanPointsFormatted = clan.clanPoints.toLocaleString().replace(/\./g, '\\.');
+  const clanVersusPointsFormatted = clanVersusPoints.replace(/\./g, '\\.');
 
   return `
 *${escapeMarkdown(clan.name)}* \\(${escapeMarkdown(clan.tag)}\\)
+━━━━━━━━━━━━━━━━━
+
+📋 *CLAN INFO*
 📝 Description: ${escapeMarkdown(clan.description)}
-${locationInfo}
+🌍 Location: ${locationInfo}
 👑 Level: ${clan.clanLevel}
 👥 Members: ${clan.members}/50
-🏆 Clan Points: ${clan.clanPoints}
-🏆 Clan Versus Points: ${clan.clanVersusPoints}
-${warLeagueInfo}
-⚔️ War Frequency: ${escapeMarkdown(clan.warFrequency)}
-🏅 War Win Streak: ${clan.warWinStreak}
-🎖️ War Wins: ${clan.warWins}
-${clan.warTies !== undefined ? `🤝 War Ties: ${clan.warTies}\n` : ''}${clan.warLosses !== undefined ? `❌ War Losses: ${clan.warLosses}\n` : ''}🔍 War Log: ${clan.isWarLogPublic ? 'Public' : 'Private'}
-🏆 Required Trophies: ${clan.requiredTrophies}${capitalInfo}
+🏆 Required Trophies: ${clan.requiredTrophies}
+
+🏆 *POINTS*
+🏅 Clan Points: ${clanPointsFormatted}
+🏅 Builder Base Points: ${clanVersusPointsFormatted}
+🏰 Capital Hall Level: ${capitalInfo}
+
+⚔️ *WAR INFO*
+🔰 War League: ${warLeagueInfo}
+📊 War Frequency: ${escapeMarkdown(clan.warFrequency)}
+🔍 War Log: ${clan.isWarLogPublic ? 'Public' : 'Private'}
+
+📈 *WAR STATISTICS*
+🏆 War Win Streak: ${clan.warWinStreak}
+📊 Record: ${winRatioText} \\(W\\-T\\-L\\)
+🔄 Win Rate: ${winRate}%
+${progressBar}
 `.trim();
 }
 
@@ -75,7 +134,11 @@ export function formatClanMembers(members: ClanMember[] | ClanMemberList): strin
     const name = escapeMarkdown(member.name);
     const role = escapeMarkdown(member.role);
     const rank = escapeMarkdown(member.clanRank.toString());
-    return `${rank}\\. ${name} \\(${role}\\) \\- ${member.trophies} 🏆 \\| Donations: ${member.donations}`;
+    // Ensure numbers are properly escaped for MarkdownV2
+    const trophies = member.trophies.toString().replace(/\d(?=(\d{3})+$)/g, '$&,').replace(/\./g, '\\.');
+    const donations = member.donations.toString().replace(/\d(?=(\d{3})+$)/g, '$&,').replace(/\./g, '\\.');
+    
+    return `${rank}\\. ${name} \\(${role}\\) \\- ${trophies} 🏆 \\| Donations: ${donations}`;
   }).join('\n');
   
   const remainingCount = memberArray.length - 20;
@@ -92,14 +155,16 @@ ${membersList}${remainingText}
  */
 export function createClanKeyboard(clanTag: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text("Members", `members_${clanTag}`)
-    .text("Top Donators", `donators_${clanTag}`)
+    .text("👥 Members", `members_${clanTag}`)
+    .text("🎖️ Top Donators", `donators_${clanTag}`)
     .row()
-    .text("War Log", `warlog_${clanTag}`)
-    .text("Current War", `currentwar_${clanTag}`)
+    .text("⚔️ War Log", `warlog_${clanTag}`)
+    .text("🔥 Current War", `currentwar_${clanTag}`)
     .row()
-    .text("War League", `warleague_${clanTag}`)
-    .text("Capital Raids", `capitalraids_${clanTag}`);
+    .text("👑 War League", `warleague_${clanTag}`)
+    .text("🏰 Capital Raids", `capitalraids_${clanTag}`)
+    .row()
+    .text("🔄 Refresh", `back_to_clan_${clanTag}`);
 }
 
 /**
@@ -107,7 +172,8 @@ export function createClanKeyboard(clanTag: string): InlineKeyboard {
  */
 export function createBackToClanKeyboard(clanTag: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text("« Back to Clan Info", `back_to_clan_${clanTag}`);
+    .text("« Back to Clan Info", `back_to_clan_${clanTag}`)
+    .text("🔄 Refresh", `back_to_clan_${clanTag}`);
 }
 
 /**
@@ -129,7 +195,7 @@ export function formatTopDonators(members: ClanMember[] | ClanMemberList): strin
   const topDonators = sortedMembers.slice(0, 10);
   
   const donatorsList = topDonators.map(member => 
-    `${escapeMarkdown(member.name)} \\(${escapeMarkdown(member.role)}\\): ${member.donations} donated \\| ${member.donationsReceived} received`
+    `${escapeMarkdown(member.name)} \\(${escapeMarkdown(member.role)}\\): ${member.donations.toString().replace(/\d(?=(\d{3})+$)/g, '$&,').replace(/\./g, '\\.')} donated \\| ${member.donationsReceived.toString().replace(/\d(?=(\d{3})+$)/g, '$&,').replace(/\./g, '\\.')} received`
   ).join('\n');
   
   return `
