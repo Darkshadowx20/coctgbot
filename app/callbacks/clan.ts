@@ -96,8 +96,37 @@ composer.callbackQuery(/^warlog_(.+)$/, async (ctx) => {
     await ctx.answerCallbackQuery();
   } catch (error) {
     console.error('Error fetching clan war log:', error);
+    
+    // Check if it's an access denied error
+    const isAccessDenied = error instanceof Error && 
+      (error.message.includes('accessDenied') || error.message.includes('access denied'));
+    
+    if (isAccessDenied) {
+      // Get clan name for better message
+      try {
+        const clan = await cocApi.getClan(clanTag);
+        const clanName = clan.name;
+        
+        await ctx.editMessageText(`*War Log for ${clanUtils.escapeMarkdown(clanName)}*\n\n⚠️ This clan has set their war log to private\\.\n\nThe clan leader needs to make the war log public in game settings to view this information\\. Path: Clan Settings → War Log → Public`, {
+          parse_mode: 'MarkdownV2',
+          reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+        });
+      } catch {
+        await ctx.editMessageText(`*War Log*\n\n⚠️ This clan has set their war log to private\\.\n\nThe clan leader needs to make the war log public in game settings to view this information\\. Path: Clan Settings → War Log → Public`, {
+          parse_mode: 'MarkdownV2',
+          reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+        });
+      }
+    } else {
+      // Generic error
+      await ctx.editMessageText(`*Error*\n\nFailed to fetch war log\\. Please try again later\\.`, {
+        parse_mode: 'MarkdownV2',
+        reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+      });
+    }
+    
     await ctx.answerCallbackQuery({
-      text: 'Error fetching clan war log',
+      text: isAccessDenied ? 'This clan has set their war log to private' : 'Error fetching clan war log',
       show_alert: true
     });
   }

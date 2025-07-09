@@ -497,15 +497,68 @@ export function formatClanWarLog(warLog: WarLog, clanName: string, page: number 
   // Get wars for current page
   const pageWars = warLog.items.slice(startIdx, endIdx);
   
-  // Helper function to format date
-  const formatDate = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    // Format: Month Day, Year
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric'
-    }).replace(/\./g, '\\.');
+  // Helper function to format date and time
+  const formatDateTime = (dateStr: string | undefined): string => {
+    if (!dateStr) {
+      return 'Unavailable';
+    }
+    
+    try {
+      // Parse ISO 8601 format (e.g. "20240703T113210.000Z")
+      // First try standard parsing
+      const date = new Date(dateStr);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        // Try parsing CoC's special format if standard parsing fails
+        const matches = dateStr.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z$/);
+        if (matches) {
+          const [_, year, month, day, hour, minute, second, ms] = matches;
+          const parsedDate = new Date(
+            parseInt(year),
+            parseInt(month) - 1, // month is 0-indexed
+            parseInt(day),
+            parseInt(hour),
+            parseInt(minute),
+            parseInt(second),
+            parseInt(ms)
+          );
+          
+          if (!isNaN(parsedDate.getTime())) {
+            // Format: Month Day, Year HH:MM
+            const dateString = parsedDate.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric', 
+              year: 'numeric'
+            });
+            
+            const timeString = parsedDate.toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            return (dateString + ' ' + timeString).replace(/\./g, '\\.');
+          }
+        }
+        return 'Unavailable';
+      }
+      
+      // Format: Month Day, Year HH:MM
+      const dateString = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      
+      const timeString = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      return (dateString + ' ' + timeString).replace(/\./g, '\\.');
+    } catch (error) {
+      return 'Unavailable';
+    }
   };
   
   // Format each war with improved details
@@ -538,8 +591,8 @@ export function formatClanWarLog(warLog: WarLog, clanName: string, page: number 
     const warNumber = startIdx + index + 1;
     
     return `*War \\#${warNumber}* \\- ${resultIcon} ${resultText}
-📅 ${formatDate(war.endTime)}
 🎯 ${escapeMarkdown(war.clan.name)} vs ${escapeMarkdown(war.opponent.name)} \\(${war.teamSize}v${war.teamSize}\\)
+⏱ *Ended:* ${formatDateTime(war.endTime)}
 
 *Performance:*
 ⭐ Stars: ${war.clan.stars} \\- ${war.opponent.stars} \\(${starDiffText}\\)
