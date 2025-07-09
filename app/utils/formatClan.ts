@@ -40,10 +40,10 @@ export function formatClanInfo(clan: Clan): string {
     ? `${escapeMarkdown(clan.location.name)}` 
     : 'Not set';
   
-  // Format clan versus points (show 0 instead of N/A)
-  const clanVersusPoints = clan.clanVersusPoints !== undefined 
-    ? clan.clanVersusPoints.toLocaleString() 
-    : '0';
+  // Format clan versus points (commented out due to issues)
+  // const clanVersusPoints = clan.clanVersusPoints !== undefined 
+  //   ? clan.clanVersusPoints.toLocaleString() 
+  //   : 'N/A';
   
   // Handle capital hall
   const capitalInfo = clan.clanCapital?.capitalHallLevel
@@ -82,7 +82,8 @@ export function formatClanInfo(clan: Clan): string {
 
   // Format clan points with escaped commas and dots
   const clanPointsFormatted = clan.clanPoints.toLocaleString().replace(/\./g, '\\.');
-  const clanVersusPointsFormatted = clanVersusPoints.replace(/\./g, '\\.');
+  // Comment out versus points - causing issues
+  // const clanVersusPointsFormatted = clanVersusPoints.replace(/\./g, '\\.');
 
   return `
 *${escapeMarkdown(clan.name)}* \\(${escapeMarkdown(clan.tag)}\\)
@@ -97,9 +98,8 @@ export function formatClanInfo(clan: Clan): string {
 
 🏆 *POINTS*
 🏅 Clan Points: ${clanPointsFormatted}
-🏅 Builder Base Points: ${clanVersusPointsFormatted}
 🏰 Capital Hall Level: ${capitalInfo}
-
+${/* 🏅 Builder Base Points: commented out due to issues */``}
 ⚔️ *WAR INFO*
 🔰 War League: ${warLeagueInfo}
 📊 War Frequency: ${escapeMarkdown(clan.warFrequency)}
@@ -116,7 +116,7 @@ ${progressBar}
 /**
  * Format clan member list for display in Telegram
  */
-export function formatClanMembers(members: ClanMember[] | ClanMemberList): string {
+export function formatClanMembers(members: ClanMember[] | ClanMemberList, page: number = 1): string {
   // Handle different input types
   const memberArray = Array.isArray(members) ? members : members.items;
   
@@ -127,27 +127,176 @@ export function formatClanMembers(members: ClanMember[] | ClanMemberList): strin
   // Sort members by clan rank
   const sortedMembers = [...memberArray].sort((a, b) => a.clanRank - b.clanRank);
   
-  // Get top 10 members
-  const topMembers = sortedMembers.slice(0, 20);
+  // Calculate pagination
+  const pageSize = 10;
+  const totalPages = Math.ceil(sortedMembers.length / pageSize);
+  const validPage = Math.max(1, Math.min(page, totalPages));
+  const startIdx = (validPage - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, sortedMembers.length);
   
-  const membersList = topMembers.map(member => {
-    const name = escapeMarkdown(member.name);
-    const role = escapeMarkdown(member.role);
-    const rank = escapeMarkdown(member.clanRank.toString());
-    // Ensure numbers are properly escaped for MarkdownV2
-    const trophies = member.trophies.toString().replace(/\d(?=(\d{3})+$)/g, '$&,').replace(/\./g, '\\.');
-    const donations = member.donations.toString().replace(/\d(?=(\d{3})+$)/g, '$&,').replace(/\./g, '\\.');
+  // Get members for current page
+  const pageMembers = sortedMembers.slice(startIdx, endIdx);
+  
+  // Helper function to get league based on trophies
+  const getLeague = (trophies: number): string => {
+    if (trophies >= 5000) return 'Legend';
+    if (trophies >= 4100) return 'Titan';
+    if (trophies >= 3100) return 'Champion';
+    if (trophies >= 2600) return 'Master';
+    if (trophies >= 2000) return 'Crystal';
+    if (trophies >= 1400) return 'Gold';
+    if (trophies >= 800) return 'Silver';
+    return 'Bronze';
+  };
+
+  // Helper function to get league icon
+  const getLeagueIcon = (trophies: number): string => {
+    if (trophies >= 5000) return '🔮';
+    if (trophies >= 4100) return '💎';
+    if (trophies >= 3100) return '🏆';
+    if (trophies >= 2600) return '🥇';
+    if (trophies >= 2000) return '🥈';
+    if (trophies >= 1400) return '🥉';
+    if (trophies >= 800) return '🔷';
+    return '🔶';
+  };
+  
+  // Helper function to format donations
+  const formatDonations = (sent: number, received: number): string => {
+    if (sent === 0 && received === 0) return '📦 No donations';
     
-    return `${rank}\\. ${name} \\(${role}\\) \\- ${trophies} 🏆 \\| Donations: ${donations}`;
+    let result = '';
+    if (sent > 0) result += `📦 ${sent.toLocaleString().replace(/\./g, '\\.')} sent`;
+    if (sent > 0 && received > 0) result += ' \\| ';
+    if (received > 0) result += `📥 ${received.toLocaleString().replace(/\./g, '\\.')} received`;
+    
+    // Add donation ratio if both values are present and non-zero
+    if (sent > 0 && received > 0) {
+      const ratio = (sent / received).toFixed(1).replace(/\./g, '\\.');
+      if (ratio !== '1\\.0') {
+        result += ` \\(${ratio}x\\)`;
+      } else {
+        result += ` \\(1x\\)`;
+      }
+    }
+    
+    return result;
+  };
+  
+  // Format each member
+  const membersList = pageMembers.map(member => {
+    const name = escapeMarkdown(member.name);
+    const rank = escapeMarkdown(member.clanRank.toString());
+    const trophies = member.trophies.toLocaleString().replace(/\./g, '\\.');
+    const league = getLeague(member.trophies);
+    const leagueIcon = getLeagueIcon(member.trophies);
+    
+    // Determine role icon
+    let roleIcon = '👤';
+    if (member.role === 'leader') roleIcon = '👑';
+    else if (member.role === 'coLeader') roleIcon = '⭐';
+    else if (member.role === 'admin') roleIcon = '🔱';
+    
+    // Calculate rank change
+    let rankChangeIcon = '•';
+    if (member.clanRank < member.previousClanRank) rankChangeIcon = '⬆️';
+    else if (member.clanRank > member.previousClanRank) rankChangeIcon = '⬇️';
+    
+    // Format donations
+    const donations = formatDonations(member.donations, member.donationsReceived);
+    
+    return `${rank}\\. ${roleIcon} ${name} ${rankChangeIcon}
+${leagueIcon} ${trophies} trophies \\| ${league} League
+${donations}
+──────────`;
   }).join('\n');
   
-  const remainingCount = memberArray.length - 20;
-  const remainingText = remainingCount > 0 ? `\n_\\.\\.\\.and ${remainingCount} more members_` : '';
+  // Get range information
+  const showingStart = startIdx + 1;
+  const showingEnd = endIdx;
+  const totalMembers = memberArray.length;
+  
+  // Create summary of clan composition
+  let roleCount = {
+    leader: 0,
+    coLeader: 0,
+    admin: 0,
+    member: 0
+  };
+  
+  sortedMembers.forEach(member => {
+    if (member.role in roleCount) {
+      roleCount[member.role as keyof typeof roleCount]++;
+    }
+  });
+  
+  // Calculate average donations
+  const totalDonations = sortedMembers.reduce((sum, member) => sum + member.donations, 0);
+  const avgDonations = totalMembers > 0 ? Math.round(totalDonations / totalMembers) : 0;
+  
+  // Create detailed footer with statistics
+  const details = `
+📋 *Members Breakdown*
+👑 Leader: ${roleCount.leader}
+⭐ Co\\-Leaders: ${roleCount.coLeader}
+🔱 Elders: ${roleCount.admin}
+👤 Members: ${roleCount.member}
+
+📊 *Stats*
+📦 Total Donations: ${totalDonations.toLocaleString().replace(/\./g, '\\.')}
+📈 Average Donations: ${avgDonations.toLocaleString().replace(/\./g, '\\.')}
+📋 Page ${validPage}/${totalPages} \\| Showing members ${showingStart}\\-${showingEnd} of ${totalMembers}
+
+📖 *Symbol Legend*
+Roles: 👑 Leader \\| ⭐ Co\\-Leader \\| 🔱 Elder \\| 👤 Member
+Rank Change: ⬆️ Promoted \\| ⬇️ Demoted \\| • No change
+Leagues: 🔮 Legend \\| 💎 Titan \\| 🏆 Champion \\| 🥇 Master \\| 🥈 Crystal \\| 🥉 Gold \\| 🔷 Silver \\| 🔶 Bronze`;
   
   return `
 *Clan Members*
-${membersList}${remainingText}
+
+${membersList}
+
+${details}
 `.trim();
+}
+
+/**
+ * Create pagination keyboard for clan members
+ */
+export function createClanMembersKeyboard(clanTag: string, currentPage: number, totalMembers: number): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  const totalPages = Math.ceil(totalMembers / 10);
+  
+  // First page button (if not on first page)
+  if (currentPage > 1) {
+    keyboard.text("« First", `members_${clanTag}_1`);
+  }
+  
+  // Previous page button
+  if (currentPage > 1) {
+    keyboard.text("‹ Prev", `members_${clanTag}_${currentPage - 1}`);
+  }
+  
+  // Current page indicator (non-clickable)
+  keyboard.text(`${currentPage}/${totalPages}`, `members_page_info`);
+  
+  // Next page button
+  if (currentPage < totalPages) {
+    keyboard.text("Next ›", `members_${clanTag}_${currentPage + 1}`);
+  }
+  
+  // Last page button (if not on last page)
+  if (currentPage < totalPages) {
+    keyboard.text("Last »", `members_${clanTag}_${totalPages}`);
+  }
+  
+  // Add second row with back button and refresh
+  keyboard.row()
+    .text("« Back to Clan", `back_to_clan_${clanTag}`)
+    .text("🔄 Refresh", `members_${clanTag}_${currentPage}`);
+  
+  return keyboard;
 }
 
 /**
@@ -447,4 +596,5 @@ export default {
   createClanKeyboard,
   createBackToClanKeyboard,
   createClanSearchResultsKeyboard,
+  createClanMembersKeyboard,
 }; 

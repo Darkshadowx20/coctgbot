@@ -9,14 +9,19 @@ const composer = new Composer<MyContext>();
  * Callback queries for clan details
  */
 composer.callbackQuery(/^members_(.+)$/, async (ctx) => {
-  const clanTag = ctx.match[1];
+  // Parse clan tag and page number from callback data
+  const match = ctx.match[1].match(/^(.+?)(?:_(\d+))?$/);
+  if (!match) return;
+  
+  const clanTag = match[1];
+  const page = match[2] ? parseInt(match[2]) : 1;
   
   try {
     const members = await cocApi.getClanMembers(clanTag);
     
-    await ctx.editMessageText(clanUtils.formatClanMembers(members), {
+    await ctx.editMessageText(clanUtils.formatClanMembers(members, page), {
       parse_mode: 'MarkdownV2',
-      reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
+      reply_markup: clanUtils.createClanMembersKeyboard(clanTag, page, members.items ? members.items.length : 0)
     });
     
     await ctx.answerCallbackQuery();
@@ -27,6 +32,11 @@ composer.callbackQuery(/^members_(.+)$/, async (ctx) => {
       show_alert: true
     });
   }
+});
+
+// Handle page info button click (do nothing)
+composer.callbackQuery('members_page_info', async (ctx) => {
+  await ctx.answerCallbackQuery();
 });
 
 composer.callbackQuery(/^donators_(.+)$/, async (ctx) => {
