@@ -147,10 +147,12 @@ export function createPlayerKeyboard(playerTag: string): InlineKeyboard {
     .text("🪖 Troops", `troops_${playerTag}`)
     .text("👑 Heroes", `heroes_${playerTag}`)
     .row()
+    .text("⚔️ Hero Equipment", `hero_equipment_${playerTag}`)
     .text("🧪 Spells", `spells_${playerTag}`)
-    .text("🏆 Achievements", `achievements_${playerTag}`)
     .row()
+    .text("🏆 Achievements", `achievements_${playerTag}`)
     .text("🏠 Builder Base", `builder_base_${playerTag}`)
+    .row()
     .text("🏅 Gold Pass", `gold_pass_${playerTag}`);
 }
 
@@ -312,10 +314,10 @@ export function formatPlayerHeroes(player: Player): string {
 
   // Filter home village heroes
   const homeVillageHeroes = player.heroes.filter(hero => hero.village === 'home');
-  
+
   // Sort heroes by name
   const sortedHeroes = [...homeVillageHeroes].sort((a, b) => a.name.localeCompare(b.name));
-  
+
   // Map hero names to emojis
   const heroEmojis: {[key: string]: string} = {
     'Barbarian King': '👑',
@@ -324,17 +326,658 @@ export function formatPlayerHeroes(player: Player): string {
     'Royal Champion': '🛡️',
     'Minion Prince': '🦇',
   };
-  
+
   const heroesList = sortedHeroes.map(hero => {
     const maxLevelIndicator = hero.level === hero.maxLevel ? ' ✅' : '';
     const emoji = heroEmojis[hero.name] || '⚔️'; // Default emoji if hero name not found
     return `${emoji} ${escapeMarkdown(hero.name)}: ${hero.level}/${hero.maxLevel}${maxLevelIndicator}`;
   }).join('\n');
-  
+
   return `
 *Heroes for ${escapeMarkdown(player.name)}*
 
 ${heroesList}
+`.trim();
+}
+
+/**
+ * Format player hero equipment for display in Telegram (shows menu)
+ */
+export function formatPlayerHeroEquipment(player: Player): string {
+  return `*Select Hero Equipment for ${escapeMarkdown(player.name)}*`;
+}
+
+/**
+ * Format Barbarian King equipment for display in Telegram
+ */
+export function formatPlayerBarbarianKingEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Barbarian King equipment data available';
+  }
+
+  // Filter home village Barbarian King equipment
+  const barbarianKingEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Earthquake Boots', 'Rage Vial', 'Barbarian Puppet', 'Giant Gauntlet', 'Spiky Ball', 'Vampstache', 'Snake Bracelet'].includes(equipment.name)
+  );
+
+  if (barbarianKingEquipment.length === 0) {
+    return 'No Barbarian King equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Earthquake Boots': '👢',
+    'Rage Vial': '🧪',
+    'Barbarian Puppet': '🎎',
+    'Giant Gauntlet': '🧤',
+    'Spiky Ball': '🏐',
+    'Vampstache': '🧛',
+    'Snake Bracelet': '🐍',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...barbarianKingEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*Barbarian King Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Archer Queen equipment for display in Telegram
+ */
+export function formatPlayerArcherQueenEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Archer Queen equipment data available';
+  }
+
+  // Filter home village Archer Queen equipment
+  const archerQueenEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Invisibility Vial', 'Giant Arrow', 'Archer Puppet', 'Magic Mirror', 'Healer Puppet', 'Frozen Arrow', 'Action Figure'].includes(equipment.name)
+  );
+
+  if (archerQueenEquipment.length === 0) {
+    return 'No Archer Queen equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Invisibility Vial': '👻',
+    'Giant Arrow': '🏹',
+    'Archer Puppet': '🎎',
+    'Magic Mirror': '🪞',
+    'Healer Puppet': '💖',
+    'Frozen Arrow': '❄️',
+    'Action Figure': '🎭',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...archerQueenEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*Archer Queen Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Grand Warden equipment for display in Telegram
+ */
+export function formatPlayerGrandWardenEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Grand Warden equipment data available';
+  }
+
+  // Filter home village Grand Warden equipment
+  const grandWardenEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Eternal Tome', 'Life Gem', 'Healing Tome', 'Rage Gem', 'Fireball', 'Lavaloon Puppet', 'Heroic Torch'].includes(equipment.name)
+  );
+
+  if (grandWardenEquipment.length === 0) {
+    return 'No Grand Warden equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Eternal Tome': '📖',
+    'Life Gem': '💎',
+    'Healing Tome': '📚',
+    'Rage Gem': '💎',
+    'Fireball': '🔥',
+    'Lavaloon Puppet': '🎎',
+    'Heroic Torch': '🔦',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...grandWardenEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*Grand Warden Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Royal Champion equipment for display in Telegram
+ */
+export function formatPlayerRoyalChampionEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Royal Champion equipment data available';
+  }
+
+  // Filter home village Royal Champion equipment
+  const royalChampionEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Royal Gem', 'Seeking Shield', 'Hog Rider Puppet', 'Electro Boots', 'Rocket Spear', 'Haste Vial'].includes(equipment.name)
+  );
+
+  if (royalChampionEquipment.length === 0) {
+    return 'No Royal Champion equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Royal Gem': '💎',
+    'Seeking Shield': '🛡️',
+    'Hog Rider Puppet': '🐗',
+    'Electro Boots': '👢',
+    'Rocket Spear': '🚀',
+    'Haste Vial': '🧪',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...royalChampionEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*Royal Champion Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Minion Prince equipment for display in Telegram
+ */
+export function formatPlayerMinionPrinceEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Minion Prince equipment data available';
+  }
+
+  // Filter home village Minion Prince equipment
+  const minionPrinceEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Henchmen Puppet', 'Dark Orb', 'Metal Pants', 'Noble Iron', 'Dark Crown'].includes(equipment.name)
+  );
+
+  if (minionPrinceEquipment.length === 0) {
+    return 'No Minion Prince equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Henchmen Puppet': '🎎',
+    'Dark Orb': '🔮',
+    'Metal Pants': '👖',
+    'Noble Iron': '⚔️',
+    'Dark Crown': '👑',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...minionPrinceEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*Minion Prince Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Normal Barbarian King equipment for display in Telegram
+ */
+export function formatPlayerBarbarianKingNormalEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Normal Barbarian King equipment data available';
+  }
+
+  // Filter home village Normal Barbarian King equipment
+  const normalEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Barbarian Puppet', 'Rage Vial', 'Earthquake Boots', 'Vampstache'].includes(equipment.name)
+  );
+
+  if (normalEquipment.length === 0) {
+    return 'No Normal Barbarian King equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Barbarian Puppet': '🎎',
+    'Rage Vial': '🧪',
+    'Earthquake Boots': '👢',
+    'Vampstache': '🧛',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...normalEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🟢 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*🟢 Normal Barbarian King Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Legendary Barbarian King equipment for display in Telegram
+ */
+export function formatPlayerBarbarianKingLegendaryEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Legendary Barbarian King equipment data available';
+  }
+
+  // Filter home village Legendary Barbarian King equipment
+  const legendaryEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Giant Gauntlet', 'Spiky Ball', 'Snake Bracelet'].includes(equipment.name)
+  );
+
+  if (legendaryEquipment.length === 0) {
+    return 'No Legendary Barbarian King equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Giant Gauntlet': '🧤',
+    'Spiky Ball': '🏐',
+    'Snake Bracelet': '🐍',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...legendaryEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🔵 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*� Legendary Barbarian King Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Normal Archer Queen equipment for display in Telegram
+ */
+export function formatPlayerArcherQueenNormalEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Normal Archer Queen equipment data available';
+  }
+
+  // Filter home village Normal Archer Queen equipment
+  const normalEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Archer Puppet', 'Invisibility Vial', 'Giant Arrow', 'Healer Puppet'].includes(equipment.name)
+  );
+
+  if (normalEquipment.length === 0) {
+    return 'No Normal Archer Queen equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Archer Puppet': '🎎',
+    'Invisibility Vial': '👻',
+    'Giant Arrow': '🏹',
+    'Healer Puppet': '💖',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...normalEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🟢 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*🟢 Normal Archer Queen Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Legendary Archer Queen equipment for display in Telegram
+ */
+export function formatPlayerArcherQueenLegendaryEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Legendary Archer Queen equipment data available';
+  }
+
+  // Filter home village Legendary Archer Queen equipment
+  const legendaryEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Frozen Arrow', 'Magic Mirror', 'Action Figure'].includes(equipment.name)
+  );
+
+  if (legendaryEquipment.length === 0) {
+    return 'No Legendary Archer Queen equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Frozen Arrow': '❄️',
+    'Magic Mirror': '🪞',
+    'Action Figure': '🎭',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...legendaryEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🔵 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*� Legendary Archer Queen Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Normal Grand Warden equipment for display in Telegram
+ */
+export function formatPlayerGrandWardenNormalEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Normal Grand Warden equipment data available';
+  }
+
+  // Filter home village Normal Grand Warden equipment
+  const normalEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Eternal Tome', 'Life Gem', 'Rage Gem', 'Healing Tome'].includes(equipment.name)
+  );
+
+  if (normalEquipment.length === 0) {
+    return 'No Normal Grand Warden equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Eternal Tome': '📖',
+    'Life Gem': '💎',
+    'Rage Gem': '💎',
+    'Healing Tome': '📚',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...normalEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🟢 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*🟢 Normal Grand Warden Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Legendary Grand Warden equipment for display in Telegram
+ */
+export function formatPlayerGrandWardenLegendaryEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Legendary Grand Warden equipment data available';
+  }
+
+  // Filter home village Legendary Grand Warden equipment
+  const legendaryEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Fireball', 'Lavaloon Puppet', 'Heroic Torch'].includes(equipment.name)
+  );
+
+  if (legendaryEquipment.length === 0) {
+    return 'No Legendary Grand Warden equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Fireball': '🔥',
+    'Lavaloon Puppet': '🎎',
+    'Heroic Torch': '🔦',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...legendaryEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🔵 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*� Legendary Grand Warden Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Normal Royal Champion equipment for display in Telegram
+ */
+export function formatPlayerRoyalChampionNormalEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Normal Royal Champion equipment data available';
+  }
+
+  // Filter home village Normal Royal Champion equipment
+  const normalEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Royal Gem', 'Seeking Shield', 'Hog Rider Puppet', 'Haste Vial'].includes(equipment.name)
+  );
+
+  if (normalEquipment.length === 0) {
+    return 'No Normal Royal Champion equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Royal Gem': '💎',
+    'Seeking Shield': '🛡️',
+    'Hog Rider Puppet': '🐗',
+    'Haste Vial': '🧪',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...normalEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🟢 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*🟢 Normal Royal Champion Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Legendary Royal Champion equipment for display in Telegram
+ */
+export function formatPlayerRoyalChampionLegendaryEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Legendary Royal Champion equipment data available';
+  }
+
+  // Filter home village Legendary Royal Champion equipment
+  const legendaryEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Rocket Spear', 'Electro Boots'].includes(equipment.name)
+  );
+
+  if (legendaryEquipment.length === 0) {
+    return 'No Legendary Royal Champion equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Rocket Spear': '🚀',
+    'Electro Boots': '👢',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...legendaryEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🔵 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*� Legendary Royal Champion Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Normal Minion Prince equipment for display in Telegram
+ */
+export function formatPlayerMinionPrinceNormalEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Normal Minion Prince equipment data available';
+  }
+
+  // Filter home village Normal Minion Prince equipment
+  const normalEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Henchmen Puppet', 'Dark Orb', 'Metal Pants', 'Noble Iron'].includes(equipment.name)
+  );
+
+  if (normalEquipment.length === 0) {
+    return 'No Normal Minion Prince equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Henchmen Puppet': '🎎',
+    'Dark Orb': '🔮',
+    'Metal Pants': '👖',
+    'Noble Iron': '⚔️',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...normalEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🟢 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*🟢 Normal Minion Prince Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
+`.trim();
+}
+
+/**
+ * Format Legendary Minion Prince equipment for display in Telegram
+ */
+export function formatPlayerMinionPrinceLegendaryEquipment(player: Player): string {
+  if (!player.heroEquipment || player.heroEquipment.length === 0) {
+    return 'No Legendary Minion Prince equipment data available';
+  }
+
+  // Filter home village Legendary Minion Prince equipment
+  const legendaryEquipment = player.heroEquipment.filter(equipment =>
+    equipment.village === 'home' &&
+    ['Dark Crown'].includes(equipment.name)
+  );
+
+  if (legendaryEquipment.length === 0) {
+    return 'No Legendary Minion Prince equipment data available';
+  }
+
+  // Map equipment names to emojis
+  const equipmentEmojis: {[equipmentName: string]: string} = {
+    'Dark Crown': '👑',
+  };
+
+  // Sort equipment by name
+  const sortedEquipment = [...legendaryEquipment].sort((a, b) => a.name.localeCompare(b.name));
+
+  const equipmentList = sortedEquipment.map(equipment => {
+    const maxLevelIndicator = equipment.level === equipment.maxLevel ? ' ✅' : '';
+    const emoji = equipmentEmojis[equipment.name] || '⚔️';
+    return `🔵 ${emoji} ${escapeMarkdown(equipment.name)}: ${equipment.level}/${equipment.maxLevel}${maxLevelIndicator}`;
+  }).join('\n');
+
+  return `
+*� Legendary Minion Prince Equipment for ${escapeMarkdown(player.name)}*
+
+${equipmentList}
 `.trim();
 }
 
@@ -747,6 +1390,89 @@ export function createSpellTypesKeyboard(playerTag: string): InlineKeyboard {
 }
 
 /**
+ * Create inline keyboard for hero equipment types
+ */
+export function createHeroEquipmentTypesKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("👑 Barbarian King", `barbarian_king_equipment_${playerTag}`)
+    .text("🏹 Archer Queen", `archer_queen_equipment_${playerTag}`)
+    .row()
+    .text("📚 Grand Warden", `grand_warden_equipment_${playerTag}`)
+    .text("🛡️ Royal Champion", `royal_champion_equipment_${playerTag}`)
+    .row()
+    .text("🦇 Minion Prince", `minion_prince_equipment_${playerTag}`)
+    .row()
+    .text("⚔️ All Equipment", `all_hero_equipment_${playerTag}`)
+    .row()
+    .text("« Back", `back_to_player_${playerTag}`);
+}
+
+/**
+ * Create inline keyboard for Barbarian King equipment options
+ */
+export function createBarbarianKingEquipmentKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🟢 Normal", `barbarian_king_normal_equipment_${playerTag}`)
+    .text("� Legendary", `barbarian_king_legendary_equipment_${playerTag}`)
+    .row()
+    .text("⚔️ All Equipment", `barbarian_king_all_equipment_${playerTag}`)
+    .row()
+    .text("« Back to Heroes", `hero_equipment_${playerTag}`);
+}
+
+/**
+ * Create inline keyboard for Archer Queen equipment options
+ */
+export function createArcherQueenEquipmentKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🟢 Normal", `archer_queen_normal_equipment_${playerTag}`)
+    .text("� Legendary", `archer_queen_legendary_equipment_${playerTag}`)
+    .row()
+    .text("⚔️ All Equipment", `archer_queen_all_equipment_${playerTag}`)
+    .row()
+    .text("« Back to Heroes", `hero_equipment_${playerTag}`);
+}
+
+/**
+ * Create inline keyboard for Grand Warden equipment options
+ */
+export function createGrandWardenEquipmentKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🟢 Normal", `grand_warden_normal_equipment_${playerTag}`)
+    .text("� Legendary", `grand_warden_legendary_equipment_${playerTag}`)
+    .row()
+    .text("⚔️ All Equipment", `grand_warden_all_equipment_${playerTag}`)
+    .row()
+    .text("« Back to Heroes", `hero_equipment_${playerTag}`);
+}
+
+/**
+ * Create inline keyboard for Royal Champion equipment options
+ */
+export function createRoyalChampionEquipmentKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🟢 Normal", `royal_champion_normal_equipment_${playerTag}`)
+    .text("� Legendary", `royal_champion_legendary_equipment_${playerTag}`)
+    .row()
+    .text("⚔️ All Equipment", `royal_champion_all_equipment_${playerTag}`)
+    .row()
+    .text("« Back to Heroes", `hero_equipment_${playerTag}`);
+}
+
+/**
+ * Create inline keyboard for Minion Prince equipment options
+ */
+export function createMinionPrinceEquipmentKeyboard(playerTag: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🟢 Normal", `minion_prince_normal_equipment_${playerTag}`)
+    .text("� Legendary", `minion_prince_legendary_equipment_${playerTag}`)
+    .row()
+    .text("⚔️ All Equipment", `minion_prince_all_equipment_${playerTag}`)
+    .row()
+    .text("« Back to Heroes", `hero_equipment_${playerTag}`);
+}
+
+/**
  * Format player elixir spells for display in Telegram
  */
 export function formatPlayerElixirSpells(player: Player): string {
@@ -977,7 +1703,7 @@ export function formatPlayerBuilderBaseDetails(player: Player): string {
       }
       
       if (leagueName) {
-        // Escape the pipe character for MarkdownV2
+        // Escape the pipe character for Markdown
         statsSection += ` \\| ${escapeMarkdown(leagueName)}`;
       }
     }
@@ -1041,6 +1767,7 @@ export default {
   formatPlayerInfo,
   formatPlayerTroops,
   formatPlayerHeroes,
+  formatPlayerHeroEquipment,
   formatPlayerSpells,
   formatPlayerAchievements,
   formatPlayerRankings,
@@ -1061,4 +1788,25 @@ export default {
   formatPlayerBuilderHeroes,
   formatGoldPassStatus,
   formatPlayerBuilderBaseDetails,
+  createHeroEquipmentTypesKeyboard,
+  formatPlayerBarbarianKingEquipment,
+  formatPlayerArcherQueenEquipment,
+  formatPlayerGrandWardenEquipment,
+  formatPlayerRoyalChampionEquipment,
+  formatPlayerMinionPrinceEquipment,
+  createBarbarianKingEquipmentKeyboard,
+  createArcherQueenEquipmentKeyboard,
+  createGrandWardenEquipmentKeyboard,
+  createRoyalChampionEquipmentKeyboard,
+  createMinionPrinceEquipmentKeyboard,
+  formatPlayerBarbarianKingNormalEquipment,
+  formatPlayerBarbarianKingLegendaryEquipment,
+  formatPlayerArcherQueenNormalEquipment,
+  formatPlayerArcherQueenLegendaryEquipment,
+  formatPlayerGrandWardenNormalEquipment,
+  formatPlayerGrandWardenLegendaryEquipment,
+  formatPlayerRoyalChampionNormalEquipment,
+  formatPlayerRoyalChampionLegendaryEquipment,
+  formatPlayerMinionPrinceNormalEquipment,
+  formatPlayerMinionPrinceLegendaryEquipment,
 }; 

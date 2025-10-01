@@ -23,7 +23,7 @@ export default {
     maxWarLogEntries: 5,
     
     // Default parse mode for messages
-    parseMode: 'MarkdownV2',
+    parseMode: 'Markdown',
     
     // Command throttling in milliseconds
     commandThrottling: 1000

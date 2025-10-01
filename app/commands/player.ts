@@ -28,7 +28,7 @@ composer.command('player', async (ctx) => {
     const player = await cocApi.getPlayer(playerTag);
     
     await ctx.reply(playerUtils.formatPlayerInfo(player), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: playerUtils.createPlayerKeyboard(playerTag)
     });
   } catch (error) {
@@ -67,7 +67,7 @@ composer.command(['topplayers', 'top'], async (ctx) => {
     const rankings = await cocApi.getPlayerRankings(locationId);
     
     await ctx.reply(playerUtils.formatPlayerRankings(rankings), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'player rankings');
@@ -105,7 +105,7 @@ composer.command(['topbuilder', 'topbb'], async (ctx) => {
     const rankings = await cocApi.getPlayerVersusBattleRankings(locationId);
     
     await ctx.reply(playerUtils.formatPlayerVersusBattleRankings(rankings), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'builder base rankings');
@@ -155,7 +155,7 @@ composer.command(['leaguerankings', 'leagueranks'], async (ctx) => {
     const rankings = await cocApi.getLeagueSeasonRankings(leagueId, seasonId);
     
     await ctx.reply(playerUtils.formatLeagueSeasonRankings(rankings, leagueName, seasonId), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'league rankings');

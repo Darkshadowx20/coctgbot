@@ -38,7 +38,7 @@ bot.use(userTracker);
 bot.use(commands);
 bot.use(callbacks);
 
-// Helper function to escape MarkdownV2 special characters
+// Helper function to escape Markdown special characters
 function escapeMarkdown(text: string): string {
   return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
 }
@@ -70,7 +70,7 @@ bot.command('help', async (ctx) => {
 `;
 
   await ctx.reply(helpText, {
-    parse_mode: 'MarkdownV2'
+    parse_mode: 'Markdown'
   });
 });
 
@@ -85,7 +85,7 @@ Use /help to see available commands\\.
 `;
 
   await ctx.reply(startText, {
-    parse_mode: 'MarkdownV2'
+    parse_mode: 'Markdown'
   });
 });
 

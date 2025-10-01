@@ -53,7 +53,7 @@ export function formatClanInfo(clan: Clan): string {
   // Calculate win rate and create progress bar
   const totalWars = warWins + warTies + warLosses;
   const winRateRaw = totalWars > 0 ? (warWins / totalWars * 100).toFixed(1) : '0.0';
-  // Escape decimal point for MarkdownV2
+  // Escape decimal point for Markdown
   const winRate = winRateRaw.replace('.', '\\.'); 
   
   // Get performance indicator based on win rate

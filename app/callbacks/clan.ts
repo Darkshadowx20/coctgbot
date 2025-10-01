@@ -20,7 +20,7 @@ composer.callbackQuery(/^members_(.+)$/, async (ctx) => {
     const members = await cocApi.getClanMembers(clanTag);
     
     await ctx.editMessageText(clanUtils.formatClanMembers(members, page), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createClanMembersKeyboard(clanTag, page, members.items ? members.items.length : 0)
     });
     
@@ -51,7 +51,7 @@ composer.callbackQuery(/^donators_(.+)$/, async (ctx) => {
     const members = await cocApi.getClanMembers(clanTag);
     
     await ctx.editMessageText(clanUtils.formatTopDonators(members, page), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createTopDonatorsKeyboard(clanTag, page, members.items ? members.items.length : 0)
     });
     
@@ -89,7 +89,7 @@ composer.callbackQuery(/^warlog_(.+)$/, async (ctx) => {
     const clanName = clan.name;
     
     await ctx.editMessageText(clanUtils.formatClanWarLog(warLog, clanName, page), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createWarLogKeyboard(clanTag, page, warLog.items ? warLog.items.length : 0)
     });
     
@@ -108,19 +108,19 @@ composer.callbackQuery(/^warlog_(.+)$/, async (ctx) => {
         const clanName = clan.name;
         
         await ctx.editMessageText(`*War Log for ${clanUtils.escapeMarkdown(clanName)}*\n\n⚠️ This clan has set their war log to private\\.\n\nThe clan leader needs to make the war log public in game settings to view this information\\. Path: Clan Settings → War Log → Public`, {
-          parse_mode: 'MarkdownV2',
+          parse_mode: 'Markdown',
           reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
         });
       } catch {
         await ctx.editMessageText(`*War Log*\n\n⚠️ This clan has set their war log to private\\.\n\nThe clan leader needs to make the war log public in game settings to view this information\\. Path: Clan Settings → War Log → Public`, {
-          parse_mode: 'MarkdownV2',
+          parse_mode: 'Markdown',
           reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
         });
       }
     } else {
       // Generic error
       await ctx.editMessageText(`*Error*\n\nFailed to fetch war log\\. Please try again later\\.`, {
-        parse_mode: 'MarkdownV2',
+        parse_mode: 'Markdown',
         reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
       });
     }
@@ -139,7 +139,7 @@ composer.callbackQuery(/^currentwar_(.+)$/, async (ctx) => {
     const currentWar = await cocApi.getCurrentWar(clanTag);
     
     await ctx.editMessageText(clanUtils.formatCurrentWar(currentWar), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
     });
     
@@ -159,7 +159,7 @@ composer.callbackQuery(/^warleague_(.+)$/, async (ctx) => {
     const leagueGroup = await cocApi.getCurrentWarLeagueGroup(clanTag);
     const message = clanUtils.formatClanWarLeagueGroup(leagueGroup);
     await ctx.editMessageText(message, {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
     });
   } catch (error) {
@@ -167,7 +167,7 @@ composer.callbackQuery(/^warleague_(.+)$/, async (ctx) => {
       ? '*War League Status*\n\nThis clan is not currently participating in a Clan War League\\.'
       : '*Error*\n\nFailed to fetch war league information\\.';
     await ctx.editMessageText(errorMessage, {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
     });
   }
@@ -182,7 +182,7 @@ composer.callbackQuery(/^capitalraids_(.+)$/, async (ctx) => {
     if (raidSeasons.items && raidSeasons.items.length > 0) {
       const latestSeason = raidSeasons.items[0];
       await ctx.editMessageText(clanUtils.formatCapitalRaidSeason(latestSeason, clanTag), {
-        parse_mode: 'MarkdownV2',
+        parse_mode: 'Markdown',
         reply_markup: clanUtils.createBackToClanKeyboard(clanTag)
       });
     } else {
@@ -208,7 +208,7 @@ composer.callbackQuery(/^back_to_clan_(.+)$/, async (ctx) => {
     const clan = await cocApi.getClan(clanTag);
     
     await ctx.editMessageText(clanUtils.formatClanInfo(clan), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createClanKeyboard(clanTag)
     });
     

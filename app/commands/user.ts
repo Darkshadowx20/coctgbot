@@ -88,7 +88,7 @@ composer.command('info', async (ctx) => {
     const player = await cocApi.getPlayer(playerTag);
     
     await ctx.reply(playerUtils.formatPlayerInfo(player), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: playerUtils.createPlayerKeyboard(playerTag)
     });
   } catch (error) {
@@ -112,7 +112,7 @@ composer.command('infoclan', async (ctx) => {
     const clan = await cocApi.getClan(clanTag);
     
     await ctx.reply(clanUtils.formatClanInfo(clan), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createClanKeyboard(clanTag)
     });
   } catch (error) {

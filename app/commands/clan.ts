@@ -28,7 +28,7 @@ composer.command('clan', async (ctx) => {
     const clan = await cocApi.getClan(clanTag);
     
     await ctx.reply(clanUtils.formatClanInfo(clan), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_markup: clanUtils.createClanKeyboard(clanTag)
     });
   } catch (error) {
@@ -62,7 +62,7 @@ composer.command('clansearch', async (ctx) => {
     });
     
     await ctx.reply(clanUtils.formatClanSearchResults(searchResults), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'clan search');
@@ -91,7 +91,7 @@ composer.command(['clanmembers', 'members'], async (ctx) => {
     const members = await cocApi.getClanMembers(clanTag);
     
     await ctx.reply(clanUtils.formatClanMembers(members), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'clan members');
@@ -120,7 +120,7 @@ composer.command(['clanwarlog', 'warlog'], async (ctx) => {
     const warLog = await cocApi.getClanWarLog(clanTag);
     
     await ctx.reply(clanUtils.formatClanWarLog(warLog, clanTag), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'clan war log');
@@ -149,7 +149,7 @@ composer.command(['currentwar', 'war'], async (ctx) => {
     const currentWar = await cocApi.getCurrentWar(clanTag);
     
     await ctx.reply(clanUtils.formatCurrentWar(currentWar), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'current war');
@@ -180,7 +180,7 @@ composer.command(['capitalraids', 'raids'], async (ctx) => {
     if (raidSeasons.items && raidSeasons.items.length > 0) {
       const latestSeason = raidSeasons.items[0];
       await ctx.reply(clanUtils.formatCapitalRaidSeason(latestSeason, clanTag), {
-        parse_mode: 'MarkdownV2'
+        parse_mode: 'Markdown'
       });
     } else {
       await ctx.reply('No raid seasons found for this clan');
@@ -212,7 +212,7 @@ composer.command(['clanwarleague', 'cwl'], async (ctx) => {
     const cwlGroup = await cocApi.getCurrentWarLeagueGroup(clanTag);
     
     await ctx.reply(clanUtils.formatClanWarLeagueGroup(cwlGroup), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'clan war league group');
@@ -250,7 +250,7 @@ composer.command(['topclans'], async (ctx) => {
     const rankings = await cocApi.getClanRankings(locationId);
     
     await ctx.reply(clanUtils.formatClanRankings(rankings), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'clan rankings');
@@ -288,7 +288,7 @@ composer.command(['topbuilderclans', 'topbbclans'], async (ctx) => {
     const rankings = await cocApi.getClanVersusRankings(locationId);
     
     await ctx.reply(clanUtils.formatClanVersusRankings(rankings), {
-      parse_mode: 'MarkdownV2'
+      parse_mode: 'Markdown'
     });
   } catch (error) {
     await handleApiError(ctx, error, 'builder base clan rankings');
